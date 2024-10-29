@@ -9,8 +9,8 @@ help:
 .PHONY: init
 init:
 	pip install --upgrade uv
-	uv pip install -r requirements/main.txt -r requirements/dev.txt \
-	    -r requirements/tox.txt
+	uv pip install --verify-hashes -r requirements/main.txt \
+	    -r requirements/dev.txt -r requirements/tox.txt
 	uv pip install --editable .
 	rm -rf .tox
 	uv pip install --upgrade pre-commit
@@ -29,7 +29,7 @@ update-deps:
 	uv pip install --upgrade pre-commit
 	pre-commit autoupdate
 	uv pip compile --upgrade --universal --generate-hashes		\
-	    --output-file requirements/main.txt requirements/main.in
+	    --output-file requirements/main.txt pyproject.toml
 	uv pip compile --upgrade --universal --generate-hashes		\
 	    --output-file requirements/dev.txt requirements/dev.in
 	uv pip compile --upgrade --universal --generate-hashes		\
