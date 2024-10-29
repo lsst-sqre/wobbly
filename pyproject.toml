@@ -18,8 +18,15 @@ classifiers = [
     "Typing :: Typed",
 ]
 requires-python = ">=3.12"
-# Use requirements/main.in for runtime dependencies instead.
-dependencies = []
+dependencies = [
+    # FastAPI including some optional features
+    "fastapi>=0.100",
+    "uvicorn[standard]",
+    # Other dependencies
+    "pydantic>2",
+    "pydantic-settings",
+    "safir>=6.5.1",
+]
 dynamic = ["version"]
 
 [project.scripts]
