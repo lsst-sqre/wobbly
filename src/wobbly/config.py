@@ -14,9 +14,7 @@ class Config(BaseSettings):
 
     name: str = Field("wobbly", title="Name of application")
 
-    path_prefix: str = Field(
-        "/wobbly", title="URL prefix for application"
-    )
+    path_prefix: str = Field("/wobbly", title="URL prefix for application")
 
     profile: Profile = Field(
         Profile.development, title="Application logging profile"
