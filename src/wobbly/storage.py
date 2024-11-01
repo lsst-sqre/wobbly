@@ -16,7 +16,14 @@ from vo_models.uws.types import ExecutionPhase
 from vo_models.vosi.availability import Availability
 
 from .exceptions import UnknownJobError
-from .models import Job, JobCreate, JobError, JobResult, JobUpdate
+from .models import (
+    Job,
+    JobCreate,
+    JobError,
+    JobIdentifier,
+    JobResult,
+    JobUpdateMetadata,
+)
 from .schema import Job as SQLJob
 from .schema import JobResult as SQLJobResult
 
@@ -133,38 +140,34 @@ class JobStore:
             note = f"{type(e).__name__}: {e!s}"
             return Availability(available=False, note=[note])
 
-    async def delete(self, service: str, job_id: str) -> bool:
+    async def delete(self, job_id: JobIdentifier) -> bool:
         """Delete a job by ID.
 
         Parameters
         ----------
-        service
-            Service associated with the job. If the job ID exists but doesn't
-            match the service, the result will be exactly the same as if the
-            job ID doesn't exist.
         job_id
-            ID of the job to delete.
+            Identifier of job to dleete.
 
         Returns
         -------
         bool
-            `True` if a job with that ID associated with that service was
-            found and deleted, `False` otherwise.
+            `True` if a job with that ID was found and deleted, `False`
+            otherwise.
         """
         stmt = delete(SQLJob).where(
-            SQLJob.service == service, SQLJob.id == int(job_id)
+            SQLJob.service == job_id.service, SQLJob.id == int(job_id.id)
         )
+        if job_id.owner:
+            stmt = stmt.where(SQLJob.owner == job_id.owner)
         async with self._session.begin():
             result = await self._session.execute(stmt)
             return result.rowcount >= 1
 
-    async def get(self, service: str, job_id: str) -> Job:
+    async def get(self, job_id: JobIdentifier) -> Job:
         """Retrieve a job by ID.
 
         Parameters
         ----------
-        service
-            Name of the service that owns the job.
         job_id
             ID of the job to retrieve.
 
@@ -179,7 +182,7 @@ class JobStore:
             Raised if the job was not found.
         """
         async with self._session.begin():
-            job = await self._get_job(service, job_id)
+            job = await self._get_job(job_id)
             return _convert_job(job)
 
     async def list(
@@ -187,7 +190,7 @@ class JobStore:
         service: str,
         user: str | None = None,
         *,
-        phases: list[ExecutionPhase] | None = None,
+        phases: set[ExecutionPhase] | None = None,
         after: datetime | None = None,
         count: int | None = None,
     ) -> list[Job]:
@@ -247,72 +250,83 @@ class JobStore:
             return [_convert_job(j) for j in jobs.all()]
 
     @retry_async_transaction
-    async def mark_aborted(self, service: str, job_id: str) -> None:
+    async def mark_aborted(self, job_id: JobIdentifier) -> Job:
         """Mark a job as aborted.
 
         Parameters
         ----------
-        service
-            Service that owns the job.
         job_id
             Identifier of the job.
+
+        Returns
+        -------
+        Job
+            Job after the transition has been applied.
 
         Raises
         ------
         UnknownJobError
-            Raised if the job was not found or has a non-matching service.
+            Raised if the job was not found.
         """
         async with self._session.begin():
-            job = await self._get_job(service, job_id)
+            job = await self._get_job(job_id)
             job.phase = ExecutionPhase.ABORTED
             if job.start_time:
                 job.end_time = datetime_to_db(datetime.now(tz=UTC))
+            return _convert_job(job)
 
     @retry_async_transaction
-    async def mark_archived(self, service: str, job_id: str) -> None:
+    async def mark_archived(self, job_id: JobIdentifier) -> Job:
         """Mark a job as archived.
 
         Parameters
         ----------
-        service
-            Service that owns the job.
         job_id
             Identifier of the job.
+
+        Returns
+        -------
+        Job
+            Job after the transition has been applied.
 
         Raises
         ------
         UnknownJobError
-            Raised if the job was not found or has a non-matching service.
+            Raised if the job was not found.
         """
         async with self._session.begin():
-            job = await self._get_job(service, job_id)
+            job = await self._get_job(job_id)
             job.phase = ExecutionPhase.ARCHIVED
+            return _convert_job(job)
 
     @retry_async_transaction
     async def mark_completed(
-        self, service: str, job_id: str, results: list[JobResult]
-    ) -> None:
+        self, job_id: JobIdentifier, results: list[JobResult]
+    ) -> Job:
         """Mark a job as completed.
 
         Parameters
         ----------
-        service
-            Service that owns the job.
         job_id
             Identifier of the job.
         results
             Results of the job.
 
+        Returns
+        -------
+        Job
+            Job after the transition has been applied.
+
         Raises
         ------
         UnknownJobError
-            Raised if the job was not found or has a non-matching service.
+            Raised if the job was not found.
         """
         async with self._session.begin():
-            job = await self._get_job(service, job_id)
+            job = await self._get_job(job_id)
             job.end_time = datetime_to_db(datetime.now(tz=UTC))
             if job.phase == ExecutionPhase.ABORTED:
-                return
+                return None
             job.phase = ExecutionPhase.COMPLETED
             for sequence, result in enumerate(results, start=1):
                 sql_result = SQLJobResult(
@@ -324,69 +338,77 @@ class JobStore:
                     mime_type=result.mime_type,
                 )
                 self._session.add(sql_result)
+        async with self._session.begin():
+            return _convert_job(await self._get_job(job_id))
 
     @retry_async_transaction
-    async def mark_failed(
-        self, service: str, job_id: str, error: JobError
-    ) -> None:
+    async def mark_failed(self, job_id: JobIdentifier, error: JobError) -> Job:
         """Mark a job as failed with an error.
 
         Parameters
         ----------
-        service
-            Service that owns the job.
         job_id
             Identifier of the job.
         error
             Error that caused the job failure.
 
+        Returns
+        -------
+        Job
+            Job after the transition has been applied.
+
         Raises
         ------
         UnknownJobError
-            Raised if the job was not found or has a non-matching service.
+            Raised if the job was not found.
         """
         async with self._session.begin():
-            job = await self._get_job(service, job_id)
+            job = await self._get_job(job_id)
             job.end_time = datetime_to_db(datetime.now(tz=UTC))
             if job.phase == ExecutionPhase.ABORTED:
-                return
+                return None
             job.phase = ExecutionPhase.ERROR
             job.error_type = error.type
             job.error_code = error.code
             job.error_message = error.message
             job.error_detail = error.detail
+            return _convert_job(job)
 
     @retry_async_transaction
     async def mark_executing(
-        self, service: str, job_id: str, start_time: datetime
-    ) -> None:
+        self, job_id: JobIdentifier, start_time: datetime
+    ) -> Job:
         """Mark a job as executing.
 
         Parameters
         ----------
-        service
-            Service that owns the job.
         job_id
             Identifier of the job.
         start_time
             Time at which the job started executing.
 
+        Returns
+        -------
+        Job
+            Job after the transition has been applied.
+
         Raises
         ------
         UnknownJobError
-            Raised if the job was not found or has a non-matching service.
+            Raised if the job was not found.
         """
         start_time = start_time.replace(microsecond=0)
         async with self._session.begin():
-            job = await self._get_job(service, job_id)
+            job = await self._get_job(job_id)
             if job.phase in (ExecutionPhase.PENDING, ExecutionPhase.QUEUED):
                 job.phase = ExecutionPhase.EXECUTING
             job.start_time = datetime_to_db(start_time)
+            return _convert_job(job)
 
     @retry_async_transaction
     async def mark_queued(
-        self, service: str, job_id: str, message_id: str
-    ) -> None:
+        self, job_id: JobIdentifier, message_id: str | None
+    ) -> Job:
         """Mark a job as queued for processing.
 
         This is called by the web frontend after queuing the work. However,
@@ -395,36 +417,37 @@ class JobStore:
 
         Parameters
         ----------
-        service
-            Service that owns the job.
         job_id
             Identifier of the job.
         message_id
             Message ID representing the job in some queuing system.
 
+        Returns
+        -------
+        Job
+            Job after the transition has been applied.
+
         Raises
         ------
         UnknownJobError
-            Raised if the job was not found or has a non-matching service.
+            Raised if the job was not found.
         """
         async with self._session.begin():
-            job = await self._get_job(service, job_id)
-            job.message_id = message_id
+            job = await self._get_job(job_id)
+            if message_id:
+                job.message_id = message_id
             if job.phase in (ExecutionPhase.PENDING, ExecutionPhase.HELD):
                 job.phase = ExecutionPhase.QUEUED
+            return _convert_job(job)
 
+    @retry_async_transaction
     async def update(
-        self, service: str, job_id: str, job_update: JobUpdate
+        self, job_id: JobIdentifier, job_update: JobUpdateMetadata
     ) -> Job:
         """Update some portion of the job.
 
-        The `~wobbly.models.JobUpdate` model only allows updates that the user
-        may be able to update.
-
         Parameters
         ----------
-        service
-            Service that owns the job.
         job_id
             Identifier of the job.
         job_update
@@ -438,10 +461,10 @@ class JobStore:
         Raises
         ------
         UnknownJobError
-            Raised if the job was not found or has a non-matching service.
+            Raised if the job was not found.
         """
         async with self._session.begin():
-            job = await self._get_job(service, job_id)
+            job = await self._get_job(job_id)
             if job_update.destruction_time:
                 time = job_update.destruction_time.replace(microsecond=0)
                 job.destruction_time = datetime_to_db(time)
@@ -450,11 +473,13 @@ class JobStore:
                 job.execution_duration = duration
             return _convert_job(job)
 
-    async def _get_job(self, service: str, job_id: str) -> SQLJob:
+    async def _get_job(self, job_id: JobIdentifier) -> SQLJob:
         """Retrieve a job from the database by job ID."""
         stmt = select(SQLJob).where(
-            SQLJob.id == int(job_id), SQLJob.service == service
+            SQLJob.id == int(job_id.id), SQLJob.service == job_id.service
         )
+        if job_id.owner:
+            stmt = stmt.where(SQLJob.owner == job_id.owner)
         job = (await self._session.execute(stmt)).scalar_one_or_none()
         if not job:
             raise UnknownJobError(job_id)

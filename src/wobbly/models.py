@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Annotated, Any, TypeAlias
+from typing import Annotated, Any, Literal, TypeAlias
 
 from pydantic import BaseModel, Field
 from safir.metadata import Metadata as SafirMetadata
@@ -22,8 +23,16 @@ __all__ = [
     "JobBase",
     "JobCreate",
     "JobError",
+    "JobIdentifier",
     "JobParameters",
     "JobResult",
+    "JobUpdate",
+    "JobUpdateAborted",
+    "JobUpdateCompleted",
+    "JobUpdateError",
+    "JobUpdateExecuting",
+    "JobUpdateMetadata",
+    "JobUpdateQueued",
 ]
 
 
@@ -31,6 +40,26 @@ class Index(BaseModel):
     """Metadata returned by the external root URL of the application."""
 
     metadata: SafirMetadata = Field(..., title="Package metadata")
+
+
+@dataclass
+class JobIdentifier:
+    """Information required to identify a unique job.
+
+    This always includes service information. Owner information is optional
+    but enforced if present. In other words, if an owner is specified and the
+    job exists but doesn't match that owner, it is treated as if it doesn't
+    exist.
+    """
+
+    service: str
+    """Service that owns the job."""
+
+    id: str
+    """Identifier of the job."""
+
+    owner: str | None = None
+    """User who owns the job."""
 
 
 class JobError(BaseModel):
@@ -285,3 +314,148 @@ class Job(BaseModel):
             description="Results of the job, if it has finished",
         ),
     ]
+
+
+class JobUpdateAborted(BaseModel):
+    """Input model when aborting a job."""
+
+    phase: Annotated[
+        Literal[ExecutionPhase.ABORTED],
+        Field(
+            title="New phase",
+            description="New phase of job",
+            examples=[ExecutionPhase.ABORTED],
+        ),
+    ]
+
+
+class JobUpdateCompleted(BaseModel):
+    """Input model when marking a job as complete."""
+
+    phase: Annotated[
+        Literal[ExecutionPhase.COMPLETED],
+        Field(
+            title="New phase",
+            description="New phase of job",
+            examples=[ExecutionPhase.COMPLETED],
+        ),
+    ]
+
+    results: Annotated[
+        list[JobResult],
+        Field(title="Job results", description="All the results of the job"),
+    ]
+
+
+class JobUpdateError(BaseModel):
+    """Input model when marking a job as failed."""
+
+    phase: Annotated[
+        Literal[ExecutionPhase.ERROR],
+        Field(
+            title="New phase",
+            description="New phase of job",
+            examples=[ExecutionPhase.ERROR],
+        ),
+    ]
+
+    error: Annotated[
+        JobError,
+        Field(
+            title="Failure details",
+            description="Job failure error message and details",
+        ),
+    ]
+
+
+class JobUpdateExecuting(BaseModel):
+    """Input model when marking a job as executing."""
+
+    phase: Annotated[
+        Literal[ExecutionPhase.EXECUTING],
+        Field(
+            title="New phase",
+            description="New phase of job",
+            examples=[ExecutionPhase.EXECUTING],
+        ),
+    ]
+
+    start_time: Annotated[
+        datetime,
+        Field(
+            title="Start time",
+            description="When the job started executing",
+            examples=["2024-11-01T12:15:45+00:00"],
+        ),
+    ]
+
+
+class JobUpdateQueued(BaseModel):
+    """Input model when marking a job as queued."""
+
+    phase: Annotated[
+        Literal[ExecutionPhase.QUEUED],
+        Field(
+            title="New phase",
+            description="New phase of job",
+            examples=[ExecutionPhase.QUEUED],
+        ),
+    ]
+
+    message_id: Annotated[
+        str | None,
+        Field(
+            title="Queue message ID",
+            description="Corresponding message within a job queuing system",
+            examples=["4ce850a7-d877-4827-a3f6-f84534ec3fad"],
+        ),
+    ]
+
+
+class JobUpdateMetadata(BaseModel):
+    """Input model when updating job metadata."""
+
+    phase: Annotated[
+        None,
+        Field(
+            title="New phase", description="New phase of job", examples=[None]
+        ),
+    ] = None
+
+    destruction_time: Annotated[
+        datetime,
+        Field(
+            title="Destruction time",
+            description=(
+                "At this time, the job will be aborted if it is still"
+                " running, its results will be deleted, and it will either"
+                " change phase to ARCHIVED or all record of the job will be"
+                " discarded"
+            ),
+            examples=["2024-11-29T23:57:55+00:00"],
+        ),
+    ]
+
+    execution_duration: Annotated[
+        timedelta | None,
+        Field(
+            title="Maximum execution duration",
+            description=(
+                "Allowed maximum execution duration. This is specified in"
+                " elapsed wall clock time (not CPU time). If null, the"
+                " execution time is unlimited. If the job runs for longer than"
+                " this time period, it will be aborted."
+            ),
+        ),
+    ]
+
+
+JobUpdate: TypeAlias = Annotated[
+    JobUpdateAborted
+    | JobUpdateCompleted
+    | JobUpdateError
+    | JobUpdateExecuting
+    | JobUpdateQueued
+    | JobUpdateMetadata,
+    Field(title="Update to job", discriminator="phase"),
+]
