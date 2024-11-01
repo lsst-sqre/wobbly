@@ -29,8 +29,8 @@ __all__ = [
     "JobUpdate",
     "JobUpdateAborted",
     "JobUpdateCompleted",
-    "JobUpdateError",
     "JobUpdateExecuting",
+    "JobUpdateFailed",
     "JobUpdateMetadata",
     "JobUpdateQueued",
 ]
@@ -347,27 +347,6 @@ class JobUpdateCompleted(BaseModel):
     ]
 
 
-class JobUpdateError(BaseModel):
-    """Input model when marking a job as failed."""
-
-    phase: Annotated[
-        Literal[ExecutionPhase.ERROR],
-        Field(
-            title="New phase",
-            description="New phase of job",
-            examples=[ExecutionPhase.ERROR],
-        ),
-    ]
-
-    error: Annotated[
-        JobError,
-        Field(
-            title="Failure details",
-            description="Job failure error message and details",
-        ),
-    ]
-
-
 class JobUpdateExecuting(BaseModel):
     """Input model when marking a job as executing."""
 
@@ -386,6 +365,27 @@ class JobUpdateExecuting(BaseModel):
             title="Start time",
             description="When the job started executing",
             examples=["2024-11-01T12:15:45+00:00"],
+        ),
+    ]
+
+
+class JobUpdateFailed(BaseModel):
+    """Input model when marking a job as failed."""
+
+    phase: Annotated[
+        Literal[ExecutionPhase.ERROR],
+        Field(
+            title="New phase",
+            description="New phase of job",
+            examples=[ExecutionPhase.ERROR],
+        ),
+    ]
+
+    error: Annotated[
+        JobError,
+        Field(
+            title="Failure details",
+            description="Job failure error message and details",
         ),
     ]
 
@@ -453,7 +453,7 @@ class JobUpdateMetadata(BaseModel):
 JobUpdate: TypeAlias = Annotated[
     JobUpdateAborted
     | JobUpdateCompleted
-    | JobUpdateError
+    | JobUpdateFailed
     | JobUpdateExecuting
     | JobUpdateQueued
     | JobUpdateMetadata,
