@@ -214,7 +214,7 @@ class JobCreate(JobBase):
     """Information required to create a new UWS job."""
 
 
-class Job(BaseModel):
+class Job(JobBase):
     """A single UWS job as stored in the UWS data store."""
 
     id: Annotated[

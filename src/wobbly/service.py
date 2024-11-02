@@ -20,7 +20,7 @@ from .models import (
     JobUpdateMetadata,
     JobUpdateQueued,
 )
-from .storage import JobStorage
+from .storage import JobStore
 
 __all__ = ["JobService"]
 
@@ -36,7 +36,7 @@ class JobService:
         Logger to use.
     """
 
-    def __init__(self, job_storage: JobStorage, logger: BoundLogger) -> None:
+    def __init__(self, job_storage: JobStore, logger: BoundLogger) -> None:
         self._storage = job_storage
         self._logger = logger
 
@@ -61,7 +61,7 @@ class JobService:
         Job
             Full job record of the newly-created job.
         """
-        job = await self._storage.create(service, owner, job_data)
+        job = await self._storage.add(service, owner, job_data)
         self._logger.info(
             "Created job", service=service, owner=owner, job=job.id
         )
@@ -110,7 +110,7 @@ class JobService:
         """
         return await self._storage.get(job_id)
 
-    async def list(
+    async def list_jobs(
         self,
         service: str,
         user: str | None = None,
@@ -141,7 +141,7 @@ class JobService:
         list of Job
             List of jobs matching the search criteria.
         """
-        return await self._storage.list(
+        return await self._storage.list_jobs(
             service,
             user,
             phases=set(phases) if phases else None,

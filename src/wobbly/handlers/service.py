@@ -81,10 +81,10 @@ async def list_jobs(
     context: Annotated[RequestContext, Depends(context_dependency)],
 ) -> list[dict[str, Any]]:
     job_service = context.factory.create_job_service()
-    jobs = await job_service.list(
+    jobs = await job_service.list_jobs(
         service, user, phases=phase, after=after, count=count
     )
-    return [jobs.model_dump(exclude=["service"])]
+    return [j.model_dump(exclude={"service"}) for j in jobs]
 
 
 @router.post(
@@ -156,7 +156,7 @@ async def patch_job(
     update: JobUpdate,
     context: Annotated[RequestContext, Depends(context_dependency)],
 ) -> None:
-    job_service = context.facotry.create_job_service()
+    job_service = context.factory.create_job_service()
     try:
         await job_service.update(job_id, update)
     except UnknownJobError as e:

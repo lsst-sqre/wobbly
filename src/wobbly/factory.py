@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import async_scoped_session
 from structlog.stdlib import BoundLogger
 
 from .service import JobService
-from .storage import JobStorage
+from .storage import JobStore
 
 __all__ = ["Factory"]
 
@@ -36,4 +36,17 @@ class Factory:
         JobService
             Newly-created job service.
         """
-        return JobService(JobStorage(self._session), self._logger)
+        return JobService(JobStore(self._session), self._logger)
+
+    def set_logger(self, logger: BoundLogger) -> None:
+        """Replace the internal logger.
+
+        Used by the context dependency to update the logger for all
+        newly-created components when it's rebound with additional context.
+
+        Parameters
+        ----------
+        logger
+            New logger.
+        """
+        self._logger = logger

@@ -11,13 +11,13 @@ from safir.metadata import Metadata, get_metadata
 
 from ..config import config
 
-__all__ = ["get_index", "internal_router"]
+__all__ = ["router"]
 
-internal_router = APIRouter()
+router = APIRouter()
 """FastAPI router for all internal handlers."""
 
 
-@internal_router.get(
+@router.get(
     "/",
     description=(
         "Return metadata about the running application. Can also be used as"

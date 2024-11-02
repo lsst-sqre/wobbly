@@ -47,7 +47,7 @@ def _convert_job(job: SQLJob) -> Job:
             detail=job.error_detail,
         )
     return Job(
-        job_id=str(job.id),
+        id=str(job.id),
         owner=job.owner,
         phase=job.phase,
         message_id=job.message_id,
@@ -104,7 +104,9 @@ class JobStore:
         Job
             Full job record of the newly-created job.
         """
-        execution_duration = int(job_data.execution_duration.total_seconds())
+        duration = None
+        if job_data.execution_duration:
+            duration = int(job_data.execution_duration.total_seconds())
         job = SQLJob(
             service=service,
             owner=owner,
@@ -113,7 +115,7 @@ class JobStore:
             parameters=job_data.parameters,
             creation_time=datetime_to_db(datetime.now(tz=UTC)),
             destruction_time=datetime_to_db(job_data.destruction_time),
-            execution_duration=execution_duration,
+            execution_duration=duration,
             results=[],
         )
         async with self._session.begin():
@@ -185,7 +187,26 @@ class JobStore:
             job = await self._get_job(job_id)
             return _convert_job(job)
 
-    async def list(
+    async def list_expired(self) -> list[Job]:
+        """List jobs that have passed their destruction time.
+
+        Excludes jobs that are already marked as archived.
+
+        Returns
+        -------
+        list of Job
+            List of expired jobs that are not currently archived.
+        """
+        now = datetime_to_db(datetime.now(tz=UTC))
+        stmt = select(SQLJob).where(
+            SQLJob.destruction_time <= now,
+            SQLJob.phase != ExecutionPhase.ARCHIVED,
+        )
+        async with self._session.begin():
+            jobs = await self._session.execute(stmt)
+            return [_convert_job(j) for j in jobs.scalars()]
+
+    async def list_jobs(
         self,
         service: str,
         user: str | None = None,
@@ -228,26 +249,7 @@ class JobStore:
             stmt = stmt.limit(count)
         async with self._session.begin():
             jobs = await self._session.execute(stmt)
-            return [_convert_job(j) for j in jobs.all()]
-
-    async def list_expired(self) -> list[Job]:
-        """List jobs that have passed their destruction time.
-
-        Excludes jobs that are already marked as archived.
-
-        Returns
-        -------
-        list of Job
-            List of expired jobs that are not currently archived.
-        """
-        now = datetime_to_db(datetime.now(tz=UTC))
-        stmt = select(SQLJob).where(
-            SQLJob.destruction_time <= now,
-            SQLJob.phase != ExecutionPhase.ARCHIVED,
-        )
-        async with self._session.begin():
-            jobs = await self._session.execute(stmt)
-            return [_convert_job(j) for j in jobs.all()]
+            return [_convert_job(j) for j in jobs.scalars()]
 
     @retry_async_transaction
     async def mark_aborted(self, job_id: JobIdentifier) -> Job:
@@ -326,7 +328,7 @@ class JobStore:
             job = await self._get_job(job_id)
             job.end_time = datetime_to_db(datetime.now(tz=UTC))
             if job.phase == ExecutionPhase.ABORTED:
-                return None
+                return _convert_job(job)
             job.phase = ExecutionPhase.COMPLETED
             for sequence, result in enumerate(results, start=1):
                 sql_result = SQLJobResult(
@@ -366,7 +368,7 @@ class JobStore:
             job = await self._get_job(job_id)
             job.end_time = datetime_to_db(datetime.now(tz=UTC))
             if job.phase == ExecutionPhase.ABORTED:
-                return None
+                return _convert_job(job)
             job.phase = ExecutionPhase.ERROR
             job.error_type = error.type
             job.error_code = error.code
@@ -482,5 +484,5 @@ class JobStore:
             stmt = stmt.where(SQLJob.owner == job_id.owner)
         job = (await self._session.execute(stmt)).scalar_one_or_none()
         if not job:
-            raise UnknownJobError(job_id)
+            raise UnknownJobError(job_id.id)
         return job
