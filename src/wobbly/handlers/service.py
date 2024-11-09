@@ -8,7 +8,7 @@ service.
 """
 
 from datetime import datetime
-from typing import Annotated, Any
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header, Path, Query, Response
 from safir.dependencies.gafaelfawr import auth_dependency
@@ -80,12 +80,11 @@ async def list_jobs(
         ),
     ] = None,
     context: Annotated[RequestContext, Depends(context_dependency)],
-) -> list[dict[str, Any]]:
+) -> list[Job]:
     job_service = context.factory.create_job_service()
-    jobs = await job_service.list_jobs(
+    return await job_service.list_jobs(
         service, user, phases=phase, after=after, count=count
     )
-    return [j.model_dump(exclude={"service"}) for j in jobs]
 
 
 @router.post(

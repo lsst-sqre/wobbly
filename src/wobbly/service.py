@@ -151,6 +151,31 @@ class JobService:
             count=count,
         )
 
+    async def list_services(self) -> list[str]:
+        """List the services that have any jobs stored.
+
+        Returns
+        -------
+        list of str
+            List of service names.
+        """
+        return await self._storage.list_services()
+
+    async def list_users(self, service: str) -> list[str]:
+        """List the users who have jobs for a given service.
+
+        Parameters
+        ----------
+        service
+            Name of the service.
+
+        Returns
+        -------
+        list of str
+            List of service names.
+        """
+        return await self._storage.list_users(service)
+
     async def update(self, job_id: JobIdentifier, update: JobUpdate) -> Job:
         """Update an existing job.
 
