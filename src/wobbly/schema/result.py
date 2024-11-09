@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from sqlalchemy import ForeignKey, Index, String
+from sqlalchemy import ForeignKey, Index
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .base import SchemaBase
@@ -19,11 +19,11 @@ class JobResult(SchemaBase):
     job_id: Mapped[int] = mapped_column(
         ForeignKey("job.id", ondelete="CASCADE")
     )
-    result_id: Mapped[str] = mapped_column(String(64))
+    result_id: Mapped[str]
     sequence: Mapped[int]
-    url: Mapped[str] = mapped_column(String(256))
+    url: Mapped[str]
     size: Mapped[int | None]
-    mime_type: Mapped[str | None] = mapped_column(String(64))
+    mime_type: Mapped[str | None]
 
     __table_args__ = (
         Index("by_sequence", "job_id", "sequence", unique=True),

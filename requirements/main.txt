@@ -40,7 +40,9 @@ aiokafka==0.12.0 \
 alembic==1.14.0 \
     --hash=sha256:99bd884ca390466db5e27ffccff1d179ec5c05c965cfefc0607e69f9e411cb25 \
     --hash=sha256:b00892b53b3642d0b8dbedba234dbf1924b69be83a9a769d5a624b01094e304b
-    # via safir
+    # via
+    #   wobbly (pyproject.toml)
+    #   safir
 annotated-types==0.7.0 \
     --hash=sha256:1f02e8b43a8fbbc3f3e0d4f0f4bfc8131bcb4eebe8849b8e5c773f3a1c582a53 \
     --hash=sha256:aff07c09a53a08bc8cfccb9c85b05f1aa9a2a6f23728d790723543408344ce89
@@ -289,9 +291,9 @@ fastavro==1.9.7 \
     # via
     #   dataclasses-avroschema
     #   python-schema-registry-client
-faststream==0.5.28 \
-    --hash=sha256:620f3edd2b85ac3d329726907540027abebc939ea7f16d209ef18de7d6e82f49 \
-    --hash=sha256:67794ffa8054169488f211832c50c3a992d897ebba415032a327372e019bda4c
+faststream==0.5.29 \
+    --hash=sha256:055942ee5b0f27f93a8cb515d55917caa2de18a41591f466367ba32eef1b3565 \
+    --hash=sha256:b4f8709dc5c1b06508b83ca697478eee419a8284a4d669f2f436838d59f0b5ad
     # via safir
 gidgethub==5.3.0 \
     --hash=sha256:4dd92f2252d12756b13f9dd15cde322bfb0d625b6fb5d680da1567ec74b462c0 \
@@ -658,9 +660,9 @@ markupsafe==3.0.2 \
     --hash=sha256:f8b3d067f2e40fe93e1ccdd6b2e1d16c43140e76f02fb1319a05cf2b79d99430 \
     --hash=sha256:fcabf5ff6eea076f859677f5f0b6b5c1a51e70a376b0579e0eadef8db48c6b50
     # via mako
-packaging==24.1 \
-    --hash=sha256:026ed72c8ed3fcce5bf8950572258698927fd1dbda10a5e981cdf0ac37f4f002 \
-    --hash=sha256:5b8f2217dbdbd2f7f384c41c628544e6d52f2d0f53c6d0c3ea61aa5d1d7ff124
+packaging==24.2 \
+    --hash=sha256:09abb1bccd265c01f4a3aa3f7a7db064b36514d2cba19a2f694fe6150451a759 \
+    --hash=sha256:c228a6dc5e932d346bc5739379109d49e8853dd8223571c7c5b55260edc0b97f
     # via aiokafka
 pycparser==2.22 ; platform_python_implementation != 'PyPy' \
     --hash=sha256:491c8be9c040f5390f5bf44a5b07752bd07f56edf992381b05c701439eec10f6 \
@@ -954,9 +956,9 @@ rpds-py==0.21.0 \
     # via
     #   jsonschema
     #   referencing
-safir==6.5.1 \
-    --hash=sha256:8c4b85f07e2343848f598bbcba832fec6725219c4234e2a05e97e5623347d6bf \
-    --hash=sha256:e00167de168115477309436f136bd3c01623dfc362b9d32bc6c87ea65857f993
+safir==7.0.0 \
+    --hash=sha256:a43143ec1a8b569a27b0731c96393b91df1f0a8a7e811efe9e59f303087dc679 \
+    --hash=sha256:b781c5d3a7db07d91be2dffcf5842406b0b40d75a130c167b1527147c754dddc
     # via wobbly (pyproject.toml)
 safir-logging==6.5.1 \
     --hash=sha256:b056306de26627e29bd6a6d04b1144456a1319ec0e15a67ebbc12b43362a27cd \
