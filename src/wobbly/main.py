@@ -1,4 +1,4 @@
-"""The main application factory for the wobbly service.
+"""The main application factory for the Wobbly service.
 
 Notes
 -----
@@ -12,13 +12,13 @@ from contextlib import asynccontextmanager
 from importlib.metadata import metadata, version
 
 from fastapi import FastAPI
-from safir.dependencies.http_client import http_client_dependency
+from safir.dependencies.db_session import db_session_dependency
+from safir.fastapi import ClientRequestError, client_request_error_handler
 from safir.logging import configure_logging, configure_uvicorn_logging
 from safir.middleware.x_forwarded import XForwardedMiddleware
 
 from .config import config
-from .handlers.external import external_router
-from .handlers.internal import internal_router
+from .handlers import internal, service
 
 __all__ = ["app"]
 
@@ -26,12 +26,11 @@ __all__ = ["app"]
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Set up and tear down the application."""
-    # Any code here will be run when the application starts up.
-
+    await db_session_dependency.initialize(
+        config.database_url, config.database_password
+    )
     yield
-
-    # Any code here will be run when the application shuts down.
-    await http_client_dependency.aclose()
+    await db_session_dependency.aclose()
 
 
 configure_logging(
@@ -42,7 +41,7 @@ configure_logging(
 configure_uvicorn_logging(config.log_level)
 
 app = FastAPI(
-    title="wobbly",
+    title="Wobbly",
     description=metadata("wobbly")["Summary"],
     version=version("wobbly"),
     openapi_url=f"{config.path_prefix}/openapi.json",
@@ -53,8 +52,11 @@ app = FastAPI(
 """The main FastAPI application for wobbly."""
 
 # Attach the routers.
-app.include_router(internal_router)
-app.include_router(external_router, prefix=f"{config.path_prefix}")
+app.include_router(internal.router)
+app.include_router(service.router, prefix=f"{config.path_prefix}")
 
 # Add middleware.
 app.add_middleware(XForwardedMiddleware)
+
+# Add exception handlers.
+app.exception_handler(ClientRequestError)(client_request_error_handler)

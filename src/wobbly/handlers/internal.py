@@ -1,11 +1,9 @@
 """Internal HTTP handlers that serve relative to the root path, ``/``.
 
 These handlers aren't externally visible since the app is available at a path,
-``/wobbly``. See `wobbly.handlers.external` for
-the external endpoint handlers.
-
-These handlers should be used for monitoring, health checks, internal status,
-or other information that should not be visible outside the Kubernetes cluster.
+``/wobbly``. These handlers should be used for monitoring, health checks,
+internal status, or other information that should not be visible outside the
+Kubernetes cluster.
 """
 
 from fastapi import APIRouter
@@ -13,13 +11,13 @@ from safir.metadata import Metadata, get_metadata
 
 from ..config import config
 
-__all__ = ["get_index", "internal_router"]
+__all__ = ["router"]
 
-internal_router = APIRouter()
+router = APIRouter()
 """FastAPI router for all internal handlers."""
 
 
-@internal_router.get(
+@router.get(
     "/",
     description=(
         "Return metadata about the running application. Can also be used as"
@@ -32,11 +30,4 @@ internal_router = APIRouter()
     summary="Application metadata",
 )
 async def get_index() -> Metadata:
-    """GET ``/`` (the app's internal root).
-
-    By convention, this endpoint returns only the application's metadata.
-    """
-    return get_metadata(
-        package_name="wobbly",
-        application_name=config.name,
-    )
+    return get_metadata(package_name="wobbly", application_name=config.name)
