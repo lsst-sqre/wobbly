@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import assert_never
 
 from structlog.stdlib import BoundLogger
 from vo_models.uws.types import ExecutionPhase
@@ -194,6 +195,8 @@ class JobService:
             case JobUpdateMetadata():
                 msg = "Updated job metadata"
                 job = await self._storage.update(job_id, update)
+            case _ as unreachable:
+                assert_never(unreachable)
         self._logger.info(
             msg, service=job_id.service, owner=job_id.owner, job=job_id.id
         )
