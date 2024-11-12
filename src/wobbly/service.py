@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import assert_never
 
+from safir.datetime import format_datetime_for_logging
 from structlog.stdlib import BoundLogger
 from vo_models.uws.types import ExecutionPhase
 
@@ -170,34 +171,48 @@ class JobService:
         UnknownJobError
             Raised if the job was not found.
         """
+        logger = self._logger.bind(
+            service=job_id.service, owner=job_id.owner, job=job_id.id
+        )
         match update:
             case JobUpdateAborted():
-                msg = "Marked job as aborted"
                 job = await self._storage.mark_aborted(job_id)
+                logger = logger.bind(phase=str(job.phase))
             case JobUpdateCompleted():
-                msg = "Marked job as completed"
                 job = await self._storage.mark_completed(
                     job_id, update.results
                 )
+                logger = logger.bind(phase=str(job.phase))
             case JobUpdateError():
-                msg = "Marked job as failed"
                 job = await self._storage.mark_failed(job_id, update.error)
+                logger = logger.bind(
+                    phase=str(job.phase),
+                    error_code=update.error.code,
+                    error=update.error.message,
+                )
             case JobUpdateExecuting():
-                msg = "Marked job as executing"
                 job = await self._storage.mark_executing(
                     job_id, update.start_time
                 )
+                logger = logger.bind(
+                    phase=str(job.phase),
+                    start_time=format_datetime_for_logging(update.start_time),
+                )
             case JobUpdateQueued():
-                msg = "Marked job as queued"
                 job = await self._storage.mark_queued(
                     job_id, update.message_id
                 )
+                logger = logger.bind(
+                    phase=str(job.phase), message_id=update.message_id
+                )
             case JobUpdateMetadata():
-                msg = "Updated job metadata"
                 job = await self._storage.update(job_id, update)
+                time = format_datetime_for_logging(update.destruction_time)
+                logger = logger.bind(
+                    destruction_time=time,
+                    execution_duration=update.execution_duration,
+                )
             case _ as unreachable:
                 assert_never(unreachable)
-        self._logger.info(
-            msg, service=job_id.service, owner=job_id.owner, job=job_id.id
-        )
+        logger.info("Updated job")
         return job
