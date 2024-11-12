@@ -6,9 +6,9 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Annotated, Any, Literal, TypeAlias
 
-from pydantic import BaseModel, Field, PlainSerializer
+from pydantic import AfterValidator, BaseModel, Field, PlainSerializer
 from safir.metadata import Metadata as SafirMetadata
-from safir.pydantic import SecondsTimedelta
+from safir.pydantic import SecondsTimedelta, normalize_datetime
 from vo_models.uws.types import ErrorType, ExecutionPhase
 
 JobParameters: TypeAlias = dict[str, Any] | list[str]
@@ -17,6 +17,11 @@ JobParameters: TypeAlias = dict[str, Any] | list[str]
 This can either be a serialized parameters model (the `dict` case), or a list
 of old-style input parameters, which are stored as simple strings.
 """
+
+UtcDatetime: TypeAlias = Annotated[
+    datetime, AfterValidator(normalize_datetime)
+]
+"""Data type representing a date in ISO format in UTC."""
 
 __all__ = [
     "Index",
@@ -34,6 +39,7 @@ __all__ = [
     "JobUpdateError",
     "JobUpdateMetadata",
     "JobUpdateQueued",
+    "UtcDatetime",
 ]
 
 
@@ -184,7 +190,7 @@ class JobBase(BaseModel):
     ] = None
 
     destruction_time: Annotated[
-        datetime,
+        UtcDatetime,
         Field(
             title="Destruction time",
             description=(
@@ -266,7 +272,7 @@ class Job(JobBase):
     ] = None
 
     creation_time: Annotated[
-        datetime,
+        UtcDatetime,
         Field(
             title="Creation time",
             description="When the job was created",
@@ -275,7 +281,7 @@ class Job(JobBase):
     ]
 
     start_time: Annotated[
-        datetime | None,
+        UtcDatetime | None,
         Field(
             title="Start time",
             description="When the job started executing (if it has)",
@@ -284,7 +290,7 @@ class Job(JobBase):
     ] = None
 
     end_time: Annotated[
-        datetime | None,
+        UtcDatetime | None,
         Field(
             title="End time",
             description="When the job stopped executing (if it has)",
@@ -293,7 +299,7 @@ class Job(JobBase):
     ] = None
 
     quote: Annotated[
-        datetime | None,
+        UtcDatetime | None,
         Field(
             title="Expected completion time",
             description=(
@@ -365,7 +371,7 @@ class JobUpdateExecuting(BaseModel):
     ]
 
     start_time: Annotated[
-        datetime,
+        UtcDatetime,
         Field(
             title="Start time",
             description="When the job started executing",
@@ -428,7 +434,7 @@ class JobUpdateMetadata(BaseModel):
     ] = None
 
     destruction_time: Annotated[
-        datetime,
+        UtcDatetime,
         Field(
             title="Destruction time",
             description=(
