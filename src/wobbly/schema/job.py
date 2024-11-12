@@ -44,7 +44,7 @@ class Job(SchemaBase):
     error_message: Mapped[str | None] = mapped_column(Text)
     error_detail: Mapped[str | None] = mapped_column(Text)
 
-    # The details of how these relationship is defined was chosen to allow
+    # The details of how this relationship is defined were chosen to allow
     # this schema to be used with async SQLAlchemy. Review the SQLAlchemy
     # asyncio documentation carefully before making changes here. There are a
     # lot of surprises and sharp edges.
