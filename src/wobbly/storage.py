@@ -284,8 +284,8 @@ class JobStore:
         """
         stmt = select(SQLJob.owner).where(SQLJob.service == service).distinct()
         async with self._session.begin():
-            services = await self._session.execute(stmt)
-            return list(services.scalars())
+            users = await self._session.execute(stmt)
+            return list(users.scalars())
 
     @retry_async_transaction
     async def mark_aborted(self, job_id: JobIdentifier) -> Job:
