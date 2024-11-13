@@ -13,6 +13,10 @@ __all__ = ["Config", "config"]
 class Config(BaseSettings):
     """Configuration for wobbly."""
 
+    model_config = SettingsConfigDict(
+        env_prefix="WOBBLY_", case_sensitive=False
+    )
+
     database_url: EnvAsyncPostgresDsn = Field(
         ...,
         title="PostgreSQL DSN",
@@ -35,8 +39,10 @@ class Config(BaseSettings):
         Profile.development, title="Application logging profile"
     )
 
-    model_config = SettingsConfigDict(
-        env_prefix="WOBBLY_", case_sensitive=False
+    slack_webhook: SecretStr | None = Field(
+        None,
+        title="Slack webhook for alerts",
+        description="If set, alerts will be posted to this Slack webhook",
     )
 
 

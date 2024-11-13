@@ -8,12 +8,13 @@ Kubernetes cluster.
 
 from fastapi import APIRouter
 from safir.metadata import Metadata, get_metadata
+from safir.slack.webhook import SlackRouteErrorHandler
 
 from ..config import config
 
 __all__ = ["router"]
 
-router = APIRouter()
+router = APIRouter(route_class=SlackRouteErrorHandler)
 """FastAPI router for all internal handlers."""
 
 

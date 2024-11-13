@@ -20,6 +20,7 @@ from safir.dependencies.db_session import db_session_dependency
 from safir.fastapi import ClientRequestError, client_request_error_handler
 from safir.logging import configure_logging, configure_uvicorn_logging
 from safir.middleware.x_forwarded import XForwardedMiddleware
+from safir.slack.webhook import SlackRouteErrorHandler
 
 from .config import config
 from .handlers import admin, internal, service
@@ -40,7 +41,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     await db_session_dependency.initialize(
         config.database_url, config.database_password
     )
+
     yield
+
     await db_session_dependency.aclose()
 
 
@@ -72,3 +75,9 @@ app.add_middleware(XForwardedMiddleware)
 
 # Add exception handlers.
 app.exception_handler(ClientRequestError)(client_request_error_handler)
+
+# Configure Slack alerts.
+if config.slack_webhook:
+    logger = structlog.get_logger("wobbly")
+    SlackRouteErrorHandler.initialize(config.slack_webhook, "wobbly", logger)
+    logger.debug("Initialized Slack webhook")
