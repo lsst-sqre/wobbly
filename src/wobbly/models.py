@@ -237,6 +237,15 @@ class Job(JobBase):
         ),
     ]
 
+    service: Annotated[
+        str,
+        Field(
+            title="Service",
+            description="Service responsible for this job",
+            examples=["vo-cutouts"],
+        ),
+    ]
+
     owner: Annotated[
         str,
         Field(

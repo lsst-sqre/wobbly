@@ -52,6 +52,7 @@ def _convert_job(job: SQLJob) -> Job:
         )
     return Job(
         id=str(job.id),
+        service=job.service,
         owner=job.owner,
         phase=job.phase,
         message_id=job.message_id,
@@ -255,6 +256,37 @@ class JobStore:
         async with self._session.begin():
             jobs = await self._session.execute(stmt)
             return [_convert_job(j) for j in jobs.scalars()]
+
+    async def list_services(self) -> list[str]:
+        """List the services that have any jobs stored.
+
+        Returns
+        -------
+        list of str
+            List of service names.
+        """
+        stmt = select(SQLJob.service).distinct()
+        async with self._session.begin():
+            services = await self._session.execute(stmt)
+            return list(services.scalars())
+
+    async def list_users(self, service: str) -> list[str]:
+        """List the users who have jobs for a given service.
+
+        Parameters
+        ----------
+        service
+            Name of the service.
+
+        Returns
+        -------
+        list of str
+            List of user names.
+        """
+        stmt = select(SQLJob.owner).where(SQLJob.service == service).distinct()
+        async with self._session.begin():
+            users = await self._session.execute(stmt)
+            return list(users.scalars())
 
     @retry_async_transaction
     async def mark_aborted(self, job_id: JobIdentifier) -> Job:

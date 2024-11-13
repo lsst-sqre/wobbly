@@ -35,6 +35,7 @@ async def test_create(client: AsyncClient) -> None:
     job = r.json()
     assert job == {
         "id": "1",
+        "service": "some-service",
         "owner": "user",
         "phase": "PENDING",
         "parameters": {"foo": "bar", "baz": "other"},
@@ -71,6 +72,7 @@ async def test_create(client: AsyncClient) -> None:
     other_job = r.json()
     assert other_job == {
         "id": "2",
+        "service": "some-service",
         "owner": "other-user",
         "phase": "PENDING",
         "run_id": "big-job",
