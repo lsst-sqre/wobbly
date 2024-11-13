@@ -52,6 +52,7 @@ def _convert_job(job: SQLJob) -> Job:
         )
     return Job(
         id=str(job.id),
+        service=job.service,
         owner=job.owner,
         phase=job.phase,
         message_id=job.message_id,
