@@ -280,7 +280,7 @@ class JobStore:
         Returns
         -------
         list of str
-            List of service names.
+            List of user names.
         """
         stmt = select(SQLJob.owner).where(SQLJob.service == service).distinct()
         async with self._session.begin():
