@@ -26,34 +26,42 @@ async def test_admin(client: AsyncClient) -> None:
     assert r.headers["Location"] == "https://example.com/wobbly/jobs/1"
     job = r.json()
 
-    r = await client.get("/wobbly/services")
+    r = await client.get("/wobbly/admin/services")
     assert r.status_code == 200
     assert r.json() == ["some-service"]
 
-    r = await client.get("/wobbly/services/some-service/users")
+    r = await client.get("/wobbly/admin/services/some-service/users")
     assert r.status_code == 200
     assert r.json() == ["user"]
 
-    r = await client.get("/wobbly/services/some-service/users/user/jobs")
+    r = await client.get("/wobbly/admin/services/some-service/users/user/jobs")
     assert r.status_code == 200
     assert r.json() == [job]
 
-    r = await client.get("/wobbly/services/some-service/users/user/jobs/1")
+    r = await client.get(
+        "/wobbly/admin/services/some-service/users/user/jobs/1"
+    )
     assert r.status_code == 200
     assert r.json() == job
 
-    r = await client.get("/wobbly/services/other-service/users")
-    assert r.status_code == 200
-    assert r.json() == []
-    r = await client.get("/wobbly/services/other-service/users/user/jobs")
-    assert r.status_code == 200
-    assert r.json() == []
-    r = await client.get("/wobbly/services/other-service/users/user/jobs/1")
-    assert r.status_code == 404
-    r = await client.get("/wobbly/services/some-service/users/other-user/jobs")
+    r = await client.get("/wobbly/admin/services/other-service/users")
     assert r.status_code == 200
     assert r.json() == []
     r = await client.get(
-        "/wobbly/services/some-service/users/other-user/jobs/1"
+        "/wobbly/admin/services/other-service/users/user/jobs"
+    )
+    assert r.status_code == 200
+    assert r.json() == []
+    r = await client.get(
+        "/wobbly/admin/services/other-service/users/user/jobs/1"
+    )
+    assert r.status_code == 404
+    r = await client.get(
+        "/wobbly/admin/services/some-service/users/other-user/jobs"
+    )
+    assert r.status_code == 200
+    assert r.json() == []
+    r = await client.get(
+        "/wobbly/admin/services/some-service/users/other-user/jobs/1"
     )
     assert r.status_code == 404
