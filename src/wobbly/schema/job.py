@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import Index, String, Text
+from sqlalchemy import Index
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from vo_models.uws.types import ErrorType, ExecutionPhase
@@ -27,12 +27,12 @@ class Job(SchemaBase):
     __tablename__ = "job"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    service: Mapped[str] = mapped_column(String(64))
-    owner: Mapped[str] = mapped_column(String(64))
+    service: Mapped[str]
+    owner: Mapped[str]
     phase: Mapped[ExecutionPhase]
-    run_id: Mapped[str | None] = mapped_column(String(64))
+    run_id: Mapped[str | None]
     parameters: Mapped[JobParameters] = mapped_column(JSONB)
-    message_id: Mapped[str | None] = mapped_column(String(64))
+    message_id: Mapped[str | None]
     creation_time: Mapped[datetime]
     start_time: Mapped[datetime | None]
     end_time: Mapped[datetime | None]
@@ -41,8 +41,8 @@ class Job(SchemaBase):
     quote: Mapped[datetime | None]
     error_type: Mapped[ErrorType | None]
     error_code: Mapped[str | None]
-    error_message: Mapped[str | None] = mapped_column(Text)
-    error_detail: Mapped[str | None] = mapped_column(Text)
+    error_message: Mapped[str | None]
+    error_detail: Mapped[str | None]
 
     # The details of how this relationship is defined were chosen to allow
     # this schema to be used with async SQLAlchemy. Review the SQLAlchemy

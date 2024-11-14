@@ -23,6 +23,7 @@ dependencies = [
     "fastapi>=0.100",
     "uvicorn[standard]",
     # Other dependencies
+    "alembic[tz]",
     "pydantic>2",
     "pydantic-settings",
     "safir[db]>=6.5.1",
@@ -103,6 +104,11 @@ python_files = ["tests/*.py", "tests/*/*.py"]
 # section for project-specific ignore rules.
 [tool.ruff]
 extend = "ruff-shared.toml"
+
+[tool.ruff.lint.extend-per-file-ignores]
+"tests/**" = [
+    "ASYNC221", # useful to run subprocess in async tests for Alembic
+]
 
 [tool.ruff.lint.isort]
 known-first-party = ["wobbly", "tests"]

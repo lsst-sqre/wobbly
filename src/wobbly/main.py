@@ -7,11 +7,15 @@ constructed when this module is loaded and is not deferred until a function is
 called.
 """
 
+from __future__ import annotations
+
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from importlib.metadata import metadata, version
 
+import structlog
 from fastapi import FastAPI
+from safir.database import create_database_engine, is_database_current
 from safir.dependencies.db_session import db_session_dependency
 from safir.fastapi import ClientRequestError, client_request_error_handler
 from safir.logging import configure_logging, configure_uvicorn_logging
@@ -26,6 +30,13 @@ __all__ = ["app"]
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Set up and tear down the application."""
+    logger = structlog.get_logger("wobbly")
+    engine = create_database_engine(
+        config.database_url, config.database_password
+    )
+    if not await is_database_current(engine, logger):
+        raise RuntimeError("Database schema out of date")
+    await engine.dispose()
     await db_session_dependency.initialize(
         config.database_url, config.database_password
     )

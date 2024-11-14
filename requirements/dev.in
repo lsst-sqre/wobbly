@@ -21,3 +21,6 @@ pytest-cov
 
 # Documentation
 scriv
+
+# Alembic
+ruff
