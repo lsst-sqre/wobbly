@@ -10,6 +10,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
 from safir.models import ErrorLocation
+from safir.slack.webhook import SlackRouteErrorHandler
 from vo_models.uws.types import ExecutionPhase
 
 from ..dependencies.context import RequestContext, context_dependency
@@ -18,7 +19,7 @@ from ..models import Job, JobIdentifier
 
 __all__ = ["router"]
 
-router = APIRouter()
+router = APIRouter(route_class=SlackRouteErrorHandler)
 """FastAPI router for all admin handlers."""
 
 
