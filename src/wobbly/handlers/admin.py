@@ -26,7 +26,6 @@ router = APIRouter(route_class=SlackRouteErrorHandler)
 @router.get(
     "/admin/services",
     description="List services with at least one job stored",
-    response_model=list[str],
     summary="List services",
     tags=["admin"],
 )
@@ -41,7 +40,6 @@ async def list_services(
 @router.get(
     "/admin/services/{service}/users",
     description="List users with at least one job stored",
-    response_model=list[str],
     summary="List users",
     tags=["admin"],
 )
@@ -57,7 +55,6 @@ async def list_users(
 @router.get(
     "/admin/services/{service}/users/{user}/jobs",
     description="List jobs for a user and service",
-    response_model=list[Job],
     response_model_exclude_defaults=True,
     summary="List jobs",
     tags=["admin"],
@@ -98,7 +95,6 @@ async def list_jobs(
 @router.get(
     "/admin/services/{service}/users/{user}/jobs/{job_id}",
     description="Retrieve the record for a single job",
-    response_model=Job,
     response_model_exclude_defaults=True,
     summary="Get job",
 )
