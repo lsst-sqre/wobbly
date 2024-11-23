@@ -2,13 +2,9 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 
-from safir.database import (
-    datetime_from_db,
-    datetime_to_db,
-    retry_async_transaction,
-)
+from safir.database import datetime_to_db, retry_async_transaction
 from safir.datetime import current_datetime
 from sqlalchemy import delete, select
 from sqlalchemy.exc import OperationalError
@@ -26,52 +22,10 @@ from .models import (
     JobUpdateMetadata,
 )
 from .schema import Job as SQLJob
+from .schema import JobError as SQLJobError
 from .schema import JobResult as SQLJobResult
 
 __all__ = ["JobStore"]
-
-
-def _convert_job(job: SQLJob) -> Job:
-    """Convert the SQL representation of a job to its model.
-
-    The internal representation of a job uses a model that is kept separate
-    from the database schema so that the conversion can be done explicitly and
-    the API isolated from the SQLAlchemy database models. This internal helper
-    function converts from the database representation to the model.
-    """
-    execution_duration = None
-    if job.execution_duration:
-        execution_duration = timedelta(seconds=job.execution_duration)
-    error = None
-    if job.error_code and job.error_type and job.error_message:
-        error = JobError(
-            type=job.error_type,
-            code=job.error_code,
-            message=job.error_message,
-            detail=job.error_detail,
-        )
-    return Job(
-        id=str(job.id),
-        service=job.service,
-        owner=job.owner,
-        phase=job.phase,
-        message_id=job.message_id,
-        run_id=job.run_id,
-        parameters=job.parameters,
-        creation_time=datetime_from_db(job.creation_time),
-        start_time=datetime_from_db(job.start_time),
-        end_time=datetime_from_db(job.end_time),
-        destruction_time=datetime_from_db(job.destruction_time),
-        execution_duration=execution_duration,
-        quote=job.quote,
-        results=[
-            JobResult(
-                id=r.result_id, url=r.url, size=r.size, mime_type=r.mime_type
-            )
-            for r in sorted(job.results, key=lambda r: r.sequence)
-        ],
-        error=error,
-    )
 
 
 class JobStore:
@@ -122,12 +76,13 @@ class JobStore:
             creation_time=datetime_to_db(current_datetime()),
             destruction_time=datetime_to_db(destruction_time),
             execution_duration=duration,
+            errors=[],
             results=[],
         )
         async with self._session.begin():
             self._session.add(job)
             await self._session.flush()
-            return _convert_job(job)
+            return Job.model_validate(job, from_attributes=True)
 
     async def availability(self) -> Availability:
         """Check that the database is up.
@@ -191,7 +146,7 @@ class JobStore:
         """
         async with self._session.begin():
             job = await self._get_job(job_id)
-            return _convert_job(job)
+            return Job.model_validate(job, from_attributes=True)
 
     async def list_expired(self) -> list[Job]:
         """List jobs that have passed their destruction time.
@@ -209,8 +164,8 @@ class JobStore:
             SQLJob.phase != ExecutionPhase.ARCHIVED,
         )
         async with self._session.begin():
-            jobs = await self._session.execute(stmt)
-            return [_convert_job(j) for j in jobs.scalars()]
+            jobs = await self._session.scalars(stmt)
+            return [Job.model_validate(j, from_attributes=True) for j in jobs]
 
     async def list_jobs(
         self,
@@ -254,8 +209,8 @@ class JobStore:
         if count:
             stmt = stmt.limit(count)
         async with self._session.begin():
-            jobs = await self._session.execute(stmt)
-            return [_convert_job(j) for j in jobs.scalars()]
+            jobs = await self._session.scalars(stmt)
+            return [Job.model_validate(j, from_attributes=True) for j in jobs]
 
     async def list_services(self) -> list[str]:
         """List the services that have any jobs stored.
@@ -267,8 +222,7 @@ class JobStore:
         """
         stmt = select(SQLJob.service).distinct()
         async with self._session.begin():
-            services = await self._session.execute(stmt)
-            return list(services.scalars())
+            return list(await self._session.scalars(stmt))
 
     async def list_users(self, service: str) -> list[str]:
         """List the users who have jobs for a given service.
@@ -285,8 +239,7 @@ class JobStore:
         """
         stmt = select(SQLJob.owner).where(SQLJob.service == service).distinct()
         async with self._session.begin():
-            users = await self._session.execute(stmt)
-            return list(users.scalars())
+            return list(await self._session.scalars(stmt))
 
     @retry_async_transaction
     async def mark_aborted(self, job_id: JobIdentifier) -> Job:
@@ -315,7 +268,7 @@ class JobStore:
             job.phase = ExecutionPhase.ABORTED
             if job.start_time:
                 job.end_time = datetime_to_db(current_datetime())
-            return _convert_job(job)
+            return Job.model_validate(job, from_attributes=True)
 
     @retry_async_transaction
     async def mark_archived(self, job_id: JobIdentifier) -> Job:
@@ -339,7 +292,7 @@ class JobStore:
         async with self._session.begin():
             job = await self._get_job(job_id)
             job.phase = ExecutionPhase.ARCHIVED
-            return _convert_job(job)
+            return Job.model_validate(job, from_attributes=True)
 
     @retry_async_transaction
     async def mark_completed(
@@ -379,7 +332,7 @@ class JobStore:
             for sequence, result in enumerate(results, start=1):
                 sql_result = SQLJobResult(
                     job_id=job.id,
-                    result_id=result.id,
+                    id=result.id,
                     sequence=sequence,
                     url=result.url,
                     size=result.size,
@@ -387,10 +340,12 @@ class JobStore:
                 )
                 self._session.add(sql_result)
             await self._session.refresh(job, ["results"])
-            return _convert_job(job)
+            return Job.model_validate(job, from_attributes=True)
 
     @retry_async_transaction
-    async def mark_failed(self, job_id: JobIdentifier, error: JobError) -> Job:
+    async def mark_failed(
+        self, job_id: JobIdentifier, errors: list[JobError]
+    ) -> Job:
         """Mark a job as failed with an error.
 
         Set the job end time to the current time.
@@ -404,8 +359,8 @@ class JobStore:
         ----------
         job_id
             Identifier of the job.
-        error
-            Error that caused the job failure.
+        errors
+            Errors that caused the job failure.
 
         Returns
         -------
@@ -422,11 +377,17 @@ class JobStore:
             job.end_time = datetime_to_db(current_datetime())
             if job.phase != ExecutionPhase.ABORTED:
                 job.phase = ExecutionPhase.ERROR
-            job.error_type = error.type
-            job.error_code = error.code
-            job.error_message = error.message
-            job.error_detail = error.detail
-            return _convert_job(job)
+            for error in errors:
+                sql_error = SQLJobError(
+                    job_id=job.id,
+                    type=error.type,
+                    code=error.code,
+                    message=error.message,
+                    detail=error.detail,
+                )
+                self._session.add(sql_error)
+            await self._session.refresh(job, ["errors"])
+            return Job.model_validate(job, from_attributes=True)
 
     @retry_async_transaction
     async def mark_executing(
@@ -458,7 +419,7 @@ class JobStore:
             if job.phase in (ExecutionPhase.PENDING, ExecutionPhase.QUEUED):
                 job.phase = ExecutionPhase.EXECUTING
             job.start_time = datetime_to_db(start_time)
-            return _convert_job(job)
+            return Job.model_validate(job, from_attributes=True)
 
     @retry_async_transaction
     async def mark_queued(
@@ -493,7 +454,7 @@ class JobStore:
                 job.message_id = message_id
             if job.phase in (ExecutionPhase.PENDING, ExecutionPhase.HELD):
                 job.phase = ExecutionPhase.QUEUED
-            return _convert_job(job)
+            return Job.model_validate(job, from_attributes=True)
 
     @retry_async_transaction
     async def update(
@@ -526,7 +487,7 @@ class JobStore:
             if job_update.execution_duration:
                 duration = int(job_update.execution_duration.total_seconds())
                 job.execution_duration = duration
-            return _convert_job(job)
+            return Job.model_validate(job, from_attributes=True)
 
     async def _get_job(self, job_id: JobIdentifier) -> SQLJob:
         """Retrieve a job from the database by job ID."""

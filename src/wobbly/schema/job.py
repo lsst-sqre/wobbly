@@ -7,10 +7,11 @@ from datetime import datetime
 from sqlalchemy import Index
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from vo_models.uws.types import ErrorType, ExecutionPhase
+from vo_models.uws.types import ExecutionPhase
 
 from ..models import JobParameters
 from .base import SchemaBase
+from .error import JobError
 from .result import JobResult
 
 __all__ = ["Job"]
@@ -39,17 +40,18 @@ class Job(SchemaBase):
     destruction_time: Mapped[datetime]
     execution_duration: Mapped[int | None]
     quote: Mapped[datetime | None]
-    error_type: Mapped[ErrorType | None]
-    error_code: Mapped[str | None]
-    error_message: Mapped[str | None]
-    error_detail: Mapped[str | None]
 
-    # The details of how this relationship is defined were chosen to allow
+    # The details of how these relationships are defined were chosen to allow
     # this schema to be used with async SQLAlchemy. Review the SQLAlchemy
     # asyncio documentation carefully before making changes here. There are a
     # lot of surprises and sharp edges.
+    errors: Mapped[list[JobError]] = relationship(
+        cascade="save-update, merge, delete, delete-orphan", lazy="selectin"
+    )
     results: Mapped[list[JobResult]] = relationship(
-        cascade="delete", lazy="selectin", uselist=True
+        cascade="save-update, merge, delete, delete-orphan",
+        lazy="selectin",
+        order_by=JobResult.sequence,
     )
 
     __table_args__ = (

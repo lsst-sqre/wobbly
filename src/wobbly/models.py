@@ -6,7 +6,13 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Annotated, Any, Literal, TypeAlias
 
-from pydantic import AfterValidator, BaseModel, Field, PlainSerializer
+from pydantic import (
+    AfterValidator,
+    BaseModel,
+    BeforeValidator,
+    Field,
+    PlainSerializer,
+)
 from safir.metadata import Metadata as SafirMetadata
 from safir.pydantic import SecondsTimedelta, normalize_datetime
 from vo_models.uws.types import ErrorType, ExecutionPhase
@@ -235,6 +241,7 @@ class Job(JobBase):
             description="Unique identifier of the job",
             examples=["47183"],
         ),
+        BeforeValidator(lambda v: str(v) if isinstance(v, int) else v),
     ]
 
     service: Annotated[
@@ -320,12 +327,12 @@ class Job(JobBase):
         ),
     ] = None
 
-    error: Annotated[
-        JobError | None,
+    errors: Annotated[
+        list[JobError],
         Field(
             title="Error", description="Error information if the job failed"
         ),
-    ] = None
+    ] = []
 
     results: Annotated[
         list[JobResult],
@@ -401,8 +408,8 @@ class JobUpdateError(BaseModel):
         ),
     ]
 
-    error: Annotated[
-        JobError,
+    errors: Annotated[
+        list[JobError],
         Field(
             title="Failure details",
             description="Job failure error message and details",

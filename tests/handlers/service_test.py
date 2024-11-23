@@ -216,12 +216,12 @@ async def test_failed(client: AsyncClient) -> None:
         "detail": "Some more details",
     }
     r = await client.patch(
-        url, json={"phase": "ERROR", "error": error}, headers=headers
+        url, json={"phase": "ERROR", "errors": [error]}, headers=headers
     )
     assert r.status_code == 200
     job = r.json()
     assert job["phase"] == "ERROR"
-    assert job["error"] == error
+    assert job["errors"] == [error]
     end_time = datetime.fromisoformat(job["end_time"])
     now = datetime.now(tz=UTC)
     assert now - timedelta(seconds=5) <= end_time <= now
