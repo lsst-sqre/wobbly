@@ -7,18 +7,17 @@ by Gafaelfawr and used to limit the view of the UWS database accessible to the
 service.
 """
 
-from datetime import datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Header, Path, Query, Response
+from fastapi import APIRouter, Depends, Header, Path, Response
 from safir.dependencies.gafaelfawr import auth_dependency
 from safir.models import ErrorLocation
 from safir.slack.webhook import SlackRouteErrorHandler
-from vo_models.uws.types import ExecutionPhase
 
 from ..dependencies.context import RequestContext, context_dependency
+from ..dependencies.search import job_search_dependency
 from ..exceptions import UnknownJobError
-from ..models import Job, JobCreate, JobIdentifier, JobUpdate
+from ..models import Job, JobCreate, JobIdentifier, JobSearch, JobUpdate
 
 __all__ = ["router"]
 
@@ -58,33 +57,15 @@ async def list_jobs(
     *,
     service: Annotated[str, Depends(auth_service_dependency)],
     user: Annotated[str, Depends(auth_dependency)],
-    phase: Annotated[
-        list[ExecutionPhase] | None,
-        Query(
-            title="Execution phase",
-            description="Limit results to the provided execution phases",
-        ),
-    ] = None,
-    after: Annotated[
-        datetime | None,
-        Query(
-            title="Creation date",
-            description="Limit results to jobs created after this date",
-        ),
-    ] = None,
-    count: Annotated[
-        int | None,
-        Query(
-            title="Number of jobs",
-            description="Return at most the given number of jobs",
-        ),
-    ] = None,
+    search: Annotated[JobSearch, Depends(job_search_dependency)],
     context: Annotated[RequestContext, Depends(context_dependency)],
+    response: Response,
 ) -> list[Job]:
     job_service = context.factory.create_job_service()
-    return await job_service.list_jobs(
-        service, user, phases=phase, after=after, count=count
-    )
+    results = await job_service.list_jobs(search, service, user)
+    if search.cursor or search.limit:
+        response.headers["Link"] = results.link_header(context.request.url)
+    return results.entries
 
 
 @router.post(

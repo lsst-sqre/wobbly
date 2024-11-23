@@ -2,18 +2,19 @@
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import assert_never
 
+from safir.database import PaginatedList
 from safir.datetime import format_datetime_for_logging
 from structlog.stdlib import BoundLogger
-from vo_models.uws.types import ExecutionPhase
 
 from .exceptions import UnknownJobError
 from .models import (
     Job,
     JobCreate,
+    JobCursor,
     JobIdentifier,
+    JobSearch,
     JobUpdate,
     JobUpdateAborted,
     JobUpdateCompleted,
@@ -114,42 +115,29 @@ class JobService:
 
     async def list_jobs(
         self,
-        service: str,
+        search: JobSearch,
+        service: str | None = None,
         user: str | None = None,
-        *,
-        phases: list[ExecutionPhase] | None = None,
-        after: datetime | None = None,
-        count: int | None = None,
-    ) -> list[Job]:
+    ) -> PaginatedList[Job, JobCursor]:
         """List jobs.
 
         Parameters
         ----------
+        search
+            Job search parameters.
         service
-            Name of the service that owns the job.
+            Name of the service that owns the job, or `None` to include jobs
+            owned by any service.
         user
             Name of the user who owns the job, or `None` to include jobs owned
-            by all users.
-        phases
-            Limit the result to jobs in this list of possible execution
-            phases.
-        after
-            Limit the result to jobs created after the given datetime in UTC.
-        count
-            Limit the results to the most recent count jobs.
+            by any user.
 
         Returns
         -------
-        list of Job
+        PaginatedList of Job
             List of jobs matching the search criteria.
         """
-        return await self._storage.list_jobs(
-            service,
-            user,
-            phases=set(phases) if phases else None,
-            after=after,
-            count=count,
-        )
+        return await self._storage.list_jobs(search, service, user)
 
     async def list_services(self) -> list[str]:
         """List the services that have any jobs stored.
@@ -161,18 +149,19 @@ class JobService:
         """
         return await self._storage.list_services()
 
-    async def list_users(self, service: str) -> list[str]:
-        """List the users who have jobs for a given service.
+    async def list_users(self, service: str | None = None) -> list[str]:
+        """List the users who have jobs stored.
 
         Parameters
         ----------
         service
-            Name of the service.
+            Name of the service, or `None` to list users who have a job stored
+            for any service.
 
         Returns
         -------
         list of str
-            List of service names.
+            List of users.
         """
         return await self._storage.list_users(service)
 

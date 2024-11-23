@@ -8,7 +8,12 @@ from unittest.mock import ANY
 
 import pytest
 from httpx import AsyncClient
+from safir.database import PaginationLinkData, datetime_to_db
+from safir.dependencies.db_session import db_session_dependency
+from sqlalchemy import select
 from vo_models.uws.types import ErrorType
+
+from wobbly.schema import Job as SQLJob
 
 
 @pytest.mark.asyncio
@@ -370,3 +375,93 @@ async def test_errors(client: AsyncClient) -> None:
             **cast(dict[str, Any], kwargs),
         )
         assert r.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_pagination(client: AsyncClient) -> None:
+    headers = {
+        "X-Auth-Request-Service": "some-service",
+        "X-Auth-Request-User": "user",
+    }
+    now = datetime.now(tz=UTC)
+    destruction = now + timedelta(days=30)
+    for n in range(10):
+        r = await client.post(
+            "/wobbly/jobs",
+            json={
+                "parameters": {"id": n},
+                "destruction_time": destruction.isoformat(),
+            },
+            headers=headers,
+        )
+        assert r.status_code == 201
+
+    # Simple job list.
+    r = await client.get("/wobbly/jobs", headers=headers)
+    assert r.status_code == 200
+    expected = list(range(10))
+    expected.reverse()
+    assert [j["parameters"]["id"] for j in r.json()] == expected
+    assert "Link" not in r.headers
+
+    # Paginated queries.
+    r = await client.get("/wobbly/jobs", params={"limit": 5}, headers=headers)
+    assert r.status_code == 200
+    assert [j["parameters"]["id"] for j in r.json()] == expected[:5]
+    link_data = PaginationLinkData.from_header(r.headers["Link"])
+    assert not link_data.prev_url
+    assert link_data.first_url == "https://example.com/wobbly/jobs?limit=5"
+    assert link_data.next_url
+    r = await client.get(link_data.next_url, headers=headers)
+    assert r.status_code == 200
+    assert [j["parameters"]["id"] for j in r.json()] == expected[5:]
+    link_data = PaginationLinkData.from_header(r.headers["Link"])
+    assert not link_data.next_url
+    assert link_data.first_url == "https://example.com/wobbly/jobs?limit=5"
+    assert link_data.prev_url
+    r = await client.get(
+        link_data.prev_url, params={"limit": 1}, headers=headers
+    )
+    assert r.status_code == 200
+    assert [j["parameters"]["id"] for j in r.json()] == [expected[4]]
+
+    # Queries by phase.
+    r = await client.patch(
+        "/wobbly/jobs/1",
+        json={"phase": "QUEUED", "message_id": "some-message-id"},
+        headers=headers,
+    )
+    assert r.status_code == 200
+    r = await client.get("/wobbly/jobs", params={"limit": 5}, headers=headers)
+    assert r.status_code == 200
+    assert [j["parameters"]["id"] for j in r.json()] == expected[:5]
+    r = await client.get(
+        "/wobbly/jobs", params={"limit": 5, "phase": "QUEUED"}, headers=headers
+    )
+    assert r.status_code == 200
+    assert [j["parameters"]["id"] for j in r.json()] == [expected[9]]
+    link_data = PaginationLinkData.from_header(r.headers["Link"])
+    assert not link_data.next_url
+    assert not link_data.prev_url
+    r = await client.get(
+        "/wobbly/jobs", params={"phase": "PENDING"}, headers=headers
+    )
+    assert r.status_code == 200
+    assert [j["parameters"]["id"] for j in r.json()] == expected[:9]
+
+    # Queries with a creation time restriction.
+    stmt = select(SQLJob).where(SQLJob.id == 2)
+    async for session in db_session_dependency():
+        async with session.begin():
+            result = await session.execute(stmt)
+            job = result.scalar_one()
+            new_creation = datetime.now(tz=UTC) - timedelta(minutes=5)
+            job.creation_time = datetime_to_db(new_creation)
+    r = await client.get(
+        "/wobbly/jobs",
+        params={"since": (now - timedelta(seconds=1)).isoformat()},
+        headers=headers,
+    )
+    assert r.status_code == 200
+    since_expected = [*expected[:8], expected[9]]
+    assert [j["parameters"]["id"] for j in r.json()] == since_expected

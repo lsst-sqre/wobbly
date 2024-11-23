@@ -9,7 +9,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from vo_models.uws.types import ExecutionPhase
 
-from ..models import JobParameters
+from ..types import JobParameters
 from .base import SchemaBase
 from .error import JobError
 from .result import JobResult

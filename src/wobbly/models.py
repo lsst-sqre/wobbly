@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Annotated, Any, Literal, TypeAlias
+from typing import Annotated, Literal, Self, TypeAlias
 
 from pydantic import (
     AfterValidator,
@@ -13,16 +13,14 @@ from pydantic import (
     Field,
     PlainSerializer,
 )
+from safir.database import DatetimeIdCursor
 from safir.metadata import Metadata as SafirMetadata
 from safir.pydantic import SecondsTimedelta, normalize_datetime
+from sqlalchemy.orm import InstrumentedAttribute
 from vo_models.uws.types import ErrorType, ExecutionPhase
 
-JobParameters: TypeAlias = dict[str, Any] | list[str]
-"""Possible types of job parameters.
-
-This can either be a serialized parameters model (the `dict` case), or a list
-of old-style input parameters, which are stored as simple strings.
-"""
+from .schema import Job as SQLJob
+from .types import JobParameters
 
 UtcDatetime: TypeAlias = Annotated[
     datetime, AfterValidator(normalize_datetime)
@@ -34,10 +32,12 @@ __all__ = [
     "Job",
     "JobBase",
     "JobCreate",
+    "JobCursor",
     "JobError",
     "JobIdentifier",
     "JobParameters",
     "JobResult",
+    "JobSearch",
     "JobUpdate",
     "JobUpdateAborted",
     "JobUpdateCompleted",
@@ -341,6 +341,41 @@ class Job(JobBase):
             description="Results of the job, if it has finished",
         ),
     ] = []
+
+
+class JobCursor(DatetimeIdCursor[Job]):
+    """Cursor for paginated lists of jobs."""
+
+    @staticmethod
+    def id_column() -> InstrumentedAttribute:
+        return SQLJob.id
+
+    @staticmethod
+    def time_column() -> InstrumentedAttribute:
+        return SQLJob.creation_time
+
+    @classmethod
+    def from_entry(cls, entry: Job, *, reverse: bool = False) -> Self:
+        return cls(
+            id=int(entry.id), time=entry.creation_time, previous=reverse
+        )
+
+
+@dataclass
+class JobSearch:
+    """Collects common search parameters for jobs."""
+
+    phases: set[ExecutionPhase] | None
+    """Include only jobs in the given phases."""
+
+    since: datetime | None
+    """Include only jobs created after the given time."""
+
+    cursor: JobCursor | None
+    """Cursor for retrieving paginated results."""
+
+    limit: int | None
+    """Limit the number of jobs returned to at most this count."""
 
 
 class JobUpdateAborted(BaseModel):

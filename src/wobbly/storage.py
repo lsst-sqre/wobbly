@@ -4,7 +4,12 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from safir.database import datetime_to_db, retry_async_transaction
+from safir.database import (
+    PaginatedList,
+    PaginatedQueryRunner,
+    datetime_to_db,
+    retry_async_transaction,
+)
 from safir.datetime import current_datetime
 from sqlalchemy import delete, select
 from sqlalchemy.exc import OperationalError
@@ -16,9 +21,11 @@ from .exceptions import UnknownJobError
 from .models import (
     Job,
     JobCreate,
+    JobCursor,
     JobError,
     JobIdentifier,
     JobResult,
+    JobSearch,
     JobUpdateMetadata,
 )
 from .schema import Job as SQLJob
@@ -43,6 +50,7 @@ class JobStore:
 
     def __init__(self, session: async_scoped_session) -> None:
         self._session = session
+        self._paginated_runner = PaginatedQueryRunner(Job, JobCursor)
 
     async def add(self, service: str, owner: str, job_data: JobCreate) -> Job:
         """Create a record of a new job.
@@ -169,48 +177,43 @@ class JobStore:
 
     async def list_jobs(
         self,
-        service: str,
+        search: JobSearch,
+        service: str | None = None,
         user: str | None = None,
-        *,
-        phases: set[ExecutionPhase] | None = None,
-        after: datetime | None = None,
-        count: int | None = None,
-    ) -> list[Job]:
+    ) -> PaginatedList[Job, JobCursor]:
         """List jobs.
 
         Parameters
         ----------
+        search
+            Job search parameters.
         service
-            Name of the service that owns the job.
+            Name of the service that owns the job, or `None` to include jobs
+            owned by any service.
         user
             Name of the user who owns the job, or `None` to include jobs owned
-            by all users.
-        phases
-            Limit the result to jobs in this list of possible execution
-            phases.
-        after
-            Limit the result to jobs created after the given datetime in UTC.
-        count
-            Limit the results to the most recent count jobs.
+            by any user.
 
         Returns
         -------
-        list of Job
+        PaginatedList of Job
             List of jobs matching the search criteria.
         """
-        stmt = select(SQLJob).where(SQLJob.service == service)
+        stmt = select(SQLJob)
+        if service:
+            stmt = stmt.where(SQLJob.service == service)
         if user:
             stmt = stmt.where(SQLJob.owner == user)
-        if phases:
-            stmt = stmt.where(SQLJob.phase.in_(phases))
-        if after:
-            stmt = stmt.where(SQLJob.creation_time > datetime_to_db(after))
-        stmt = stmt.order_by(SQLJob.creation_time.desc())
-        if count:
-            stmt = stmt.limit(count)
+        if search.phases:
+            stmt = stmt.where(SQLJob.phase.in_(search.phases))
+        if search.since:
+            stmt = stmt.where(
+                SQLJob.creation_time > datetime_to_db(search.since)
+            )
         async with self._session.begin():
-            jobs = await self._session.scalars(stmt)
-            return [Job.model_validate(j, from_attributes=True) for j in jobs]
+            return await self._paginated_runner.query_object(
+                self._session, stmt, cursor=search.cursor, limit=search.limit
+            )
 
     async def list_services(self) -> list[str]:
         """List the services that have any jobs stored.
@@ -220,26 +223,28 @@ class JobStore:
         list of str
             List of service names.
         """
-        stmt = select(SQLJob.service).distinct()
+        stmt = select(SQLJob.service).order_by(SQLJob.service)
         async with self._session.begin():
-            return list(await self._session.scalars(stmt))
+            return list(await self._session.scalars(stmt.distinct()))
 
-    async def list_users(self, service: str) -> list[str]:
+    async def list_users(self, service: str | None) -> list[str]:
         """List the users who have jobs for a given service.
 
         Parameters
         ----------
         service
-            Name of the service.
+            Name of the service, or `None` to include jobs from any service.
 
         Returns
         -------
         list of str
             List of user names.
         """
-        stmt = select(SQLJob.owner).where(SQLJob.service == service).distinct()
+        stmt = select(SQLJob.owner).order_by(SQLJob.owner)
+        if service:
+            stmt = stmt.where(SQLJob.service == service)
         async with self._session.begin():
-            return list(await self._session.scalars(stmt))
+            return list(await self._session.scalars(stmt.distinct()))
 
     @retry_async_transaction
     async def mark_aborted(self, job_id: JobIdentifier) -> Job:
