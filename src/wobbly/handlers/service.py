@@ -51,7 +51,6 @@ async def job_identifier_dependency(
 @router.get(
     "/jobs",
     description="List the jobs for the authenticated user",
-    response_model=list[Job],
     response_model_exclude_defaults=True,
     summary="List jobs",
 )
@@ -91,7 +90,6 @@ async def list_jobs(
 @router.post(
     "/jobs",
     description="Create a new job for the authenticated user",
-    response_model=Job,
     response_model_exclude_defaults=True,
     status_code=201,
     summary="Create job",
@@ -114,7 +112,6 @@ async def create_job(
 @router.get(
     "/jobs/{job_id}",
     description="Retrieve the record for a single job",
-    response_model=Job,
     response_model_exclude_defaults=True,
     summary="Get job",
 )
@@ -155,7 +152,6 @@ async def delete_job(
 @router.patch(
     "/jobs/{job_id}",
     description="Update the record for a single job",
-    response_model=Job,
     response_model_exclude_defaults=True,
     summary="Update job",
 )
