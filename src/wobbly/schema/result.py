@@ -15,17 +15,13 @@ class JobResult(SchemaBase):
 
     __tablename__ = "job_result"
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     job_id: Mapped[int] = mapped_column(
-        ForeignKey("job.id", ondelete="CASCADE")
+        ForeignKey("job.id", ondelete="CASCADE"), primary_key=True
     )
-    result_id: Mapped[str]
+    id: Mapped[str] = mapped_column(primary_key=True)
     sequence: Mapped[int]
     url: Mapped[str]
     size: Mapped[int | None]
     mime_type: Mapped[str | None]
 
-    __table_args__ = (
-        Index("by_sequence", "job_id", "sequence", unique=True),
-        Index("by_result_id", "job_id", "result_id", unique=True),
-    )
+    __table_args__ = (Index("by_sequence", "job_id", "sequence", unique=True),)

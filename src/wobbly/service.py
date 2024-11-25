@@ -209,11 +209,13 @@ class JobService:
                 )
                 logger = logger.bind(phase=str(job.phase))
             case JobUpdateError():
-                job = await self._storage.mark_failed(job_id, update.error)
+                job = await self._storage.mark_failed(job_id, update.errors)
                 logger = logger.bind(
                     phase=str(job.phase),
-                    error_code=update.error.code,
-                    error=update.error.message,
+                    errors=[
+                        {"code": e.code, "message": e.message}
+                        for e in update.errors
+                    ],
                 )
             case JobUpdateExecuting():
                 job = await self._storage.mark_executing(
