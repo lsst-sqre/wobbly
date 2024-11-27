@@ -6,26 +6,15 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Annotated, Literal, Self, TypeAlias
 
-from pydantic import (
-    AfterValidator,
-    BaseModel,
-    BeforeValidator,
-    Field,
-    PlainSerializer,
-)
+from pydantic import BaseModel, BeforeValidator, Field, PlainSerializer
 from safir.database import DatetimeIdCursor
 from safir.metadata import Metadata as SafirMetadata
-from safir.pydantic import SecondsTimedelta, normalize_datetime
+from safir.pydantic import SecondsTimedelta, UtcDatetime
 from sqlalchemy.orm import InstrumentedAttribute
 from vo_models.uws.types import ErrorType, ExecutionPhase
 
 from .schema import Job as SQLJob
 from .types import JobParameters
-
-UtcDatetime: TypeAlias = Annotated[
-    datetime, AfterValidator(normalize_datetime)
-]
-"""Data type representing a date in ISO format in UTC."""
 
 __all__ = [
     "Index",
@@ -45,7 +34,6 @@ __all__ = [
     "JobUpdateExecuting",
     "JobUpdateMetadata",
     "JobUpdateQueued",
-    "UtcDatetime",
 ]
 
 
