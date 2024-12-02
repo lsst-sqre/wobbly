@@ -521,7 +521,7 @@ async def test_pagination_since(client: AsyncClient) -> None:
     # Search by since.
     r = await client.get(
         "/wobbly/jobs",
-        params={"since": (now - timedelta(seconds=1)).isoformat()},
+        params={"since": (now - timedelta(seconds=5)).isoformat()},
         headers=headers,
     )
     assert r.status_code == 200
