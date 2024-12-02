@@ -39,7 +39,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         raise RuntimeError("Database schema out of date")
     await engine.dispose()
     await db_session_dependency.initialize(
-        config.database_url, config.database_password
+        config.database_url,
+        config.database_password,
+        isolation_level="REPEATABLE READ",
     )
 
     yield

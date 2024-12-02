@@ -5,22 +5,41 @@ Write or delete access may be added later if needed. They should be protected
 by an admin-only ``GafaelfawrIngress``.
 """
 
-from datetime import datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Response
 from safir.models import ErrorLocation
 from safir.slack.webhook import SlackRouteErrorHandler
-from vo_models.uws.types import ExecutionPhase
 
 from ..dependencies.context import RequestContext, context_dependency
+from ..dependencies.search import job_search_dependency
 from ..exceptions import UnknownJobError
-from ..models import Job, JobIdentifier
+from ..models import Job, JobIdentifier, JobSearch
 
 __all__ = ["router"]
 
 router = APIRouter(route_class=SlackRouteErrorHandler)
 """FastAPI router for all admin handlers."""
+
+
+@router.get(
+    "/admin/jobs",
+    description="List jobs for any user or service",
+    response_model_exclude_defaults=True,
+    summary="List jobs",
+    tags=["admin"],
+)
+async def list_jobs(
+    *,
+    search: Annotated[JobSearch, Depends(job_search_dependency)],
+    context: Annotated[RequestContext, Depends(context_dependency)],
+    response: Response,
+) -> list[Job]:
+    job_service = context.factory.create_job_service()
+    results = await job_service.list_jobs(search)
+    if search.cursor or search.limit:
+        response.headers["Link"] = results.link_header(context.request.url)
+    return results.entries
 
 
 @router.get(
@@ -43,7 +62,7 @@ async def list_services(
     summary="List users",
     tags=["admin"],
 )
-async def list_users(
+async def list_service_users(
     service: str,
     *,
     context: Annotated[RequestContext, Depends(context_dependency)],
@@ -59,37 +78,19 @@ async def list_users(
     summary="List jobs",
     tags=["admin"],
 )
-async def list_jobs(
+async def list_service_user_jobs(
     service: str,
     user: str,
     *,
-    phase: Annotated[
-        list[ExecutionPhase] | None,
-        Query(
-            title="Execution phase",
-            description="Limit results to the provided execution phases",
-        ),
-    ] = None,
-    after: Annotated[
-        datetime | None,
-        Query(
-            title="Creation date",
-            description="Limit results to jobs created after this date",
-        ),
-    ] = None,
-    count: Annotated[
-        int | None,
-        Query(
-            title="Number of jobs",
-            description="Return at most the given number of jobs",
-        ),
-    ] = None,
+    search: Annotated[JobSearch, Depends(job_search_dependency)],
     context: Annotated[RequestContext, Depends(context_dependency)],
+    response: Response,
 ) -> list[Job]:
     job_service = context.factory.create_job_service()
-    return await job_service.list_jobs(
-        service, user, phases=phase, after=after, count=count
-    )
+    results = await job_service.list_jobs(search, service, user)
+    if search.cursor or search.limit:
+        response.headers["Link"] = results.link_header(context.request.url)
+    return results.entries
 
 
 @router.get(
@@ -113,3 +114,37 @@ async def get_job(
         e.location = ErrorLocation.path
         e.field_path = ["job_id"]
         raise
+
+
+@router.get(
+    "/admin/users",
+    description="List users of any service with at least one job stored",
+    summary="List users",
+    tags=["admin"],
+)
+async def list_users(
+    context: Annotated[RequestContext, Depends(context_dependency)],
+) -> list[str]:
+    job_service = context.factory.create_job_service()
+    return await job_service.list_users()
+
+
+@router.get(
+    "/admin/users/{user}/jobs",
+    description="List jobs for a user",
+    response_model_exclude_defaults=True,
+    summary="List jobs",
+    tags=["admin"],
+)
+async def list_user_jobs(
+    user: str,
+    *,
+    search: Annotated[JobSearch, Depends(job_search_dependency)],
+    context: Annotated[RequestContext, Depends(context_dependency)],
+    response: Response,
+) -> list[Job]:
+    job_service = context.factory.create_job_service()
+    results = await job_service.list_jobs(search, user=user)
+    if search.cursor or search.limit:
+        response.headers["Link"] = results.link_header(context.request.url)
+    return results.entries

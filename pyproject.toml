@@ -26,7 +26,7 @@ dependencies = [
     "alembic[tz]",
     "pydantic>2",
     "pydantic-settings",
-    "safir[db]>=6.5.1",
+    "safir[db]>=8.0.0",
     "sqlalchemy[asyncio]>=2.0.0",
     "vo-models>=0.4.1",
 ]
