@@ -39,6 +39,7 @@ async def job_search_dependency(
         Query(
             title="Number of jobs",
             description="Return at most the given number of jobs",
+            ge=1,
         ),
     ] = None,
 ) -> JobSearch:

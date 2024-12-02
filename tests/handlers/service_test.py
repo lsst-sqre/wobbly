@@ -298,25 +298,20 @@ async def test_update(client: AsyncClient) -> None:
 @pytest.mark.asyncio
 async def test_errors(client: AsyncClient) -> None:
     destruction = datetime.now(tz=UTC) + timedelta(days=30)
+    headers = {
+        "X-Auth-Request-Service": "some-service",
+        "X-Auth-Request-User": "user",
+    }
     r = await client.post(
         "/wobbly/jobs",
         json={
             "parameters": [],
             "destruction_time": destruction.isoformat(),
         },
-        headers={
-            "X-Auth-Request-Service": "some-service",
-            "X-Auth-Request-User": "user",
-        },
+        headers=headers,
     )
     assert r.status_code == 201
-    r = await client.get(
-        "/wobbly/jobs/1",
-        headers={
-            "X-Auth-Request-Service": "some-service",
-            "X-Auth-Request-User": "user",
-        },
-    )
+    r = await client.get("/wobbly/jobs/1", headers=headers)
     assert r.status_code == 200
 
     # Methods require both service and user to be set.
@@ -376,6 +371,12 @@ async def test_errors(client: AsyncClient) -> None:
         )
         assert r.status_code == 404
 
+    # Weird limits on searches not allowed.
+    r = await client.get("/wobbly/jobs", params={"limit": 0}, headers=headers)
+    assert r.status_code == 422
+    r = await client.get("/wobbly/jobs", params={"limit": -1}, headers=headers)
+    assert r.status_code == 422
+
 
 @pytest.mark.asyncio
 async def test_pagination(client: AsyncClient) -> None:
@@ -403,6 +404,15 @@ async def test_pagination(client: AsyncClient) -> None:
     expected.reverse()
     assert [j["parameters"]["id"] for j in r.json()] == expected
     assert "Link" not in r.headers
+
+    # Limit larger than the nubmer of jobs should return all jobs with no next
+    # URL.
+    r = await client.get("/wobbly/jobs", params={"limit": 20}, headers=headers)
+    assert r.status_code == 200
+    assert [j["parameters"]["id"] for j in r.json()] == expected
+    link_data = PaginationLinkData.from_header(r.headers["Link"])
+    assert not link_data.next_url
+    assert not link_data.prev_url
 
     # Paginated queries.
     r = await client.get("/wobbly/jobs", params={"limit": 5}, headers=headers)
@@ -465,3 +475,24 @@ async def test_pagination(client: AsyncClient) -> None:
     assert r.status_code == 200
     since_expected = [*expected[:8], expected[9]]
     assert [j["parameters"]["id"] for j in r.json()] == since_expected
+    r = await client.get(
+        "/wobbly/jobs",
+        params={"since": (now + timedelta(minutes=5)).isoformat()},
+        headers=headers,
+    )
+    assert r.status_code == 200
+    assert r.json() == []
+
+
+@pytest.mark.asyncio
+async def test_pagination_empty(client: AsyncClient) -> None:
+    headers = {
+        "X-Auth-Request-Service": "some-service",
+        "X-Auth-Request-User": "user",
+    }
+    r = await client.get("/wobbly/jobs", params={"limit": 1}, headers=headers)
+    assert r.status_code == 200
+    assert r.json() == []
+    link_data = PaginationLinkData.from_header(r.headers["Link"])
+    assert not link_data.next_url
+    assert not link_data.prev_url
