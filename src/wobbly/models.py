@@ -164,7 +164,8 @@ class JobBase(BaseModel):
                             "radius": 0.001,
                         }
                     ],
-                }
+                },
+                ["ID data-id", "CIRCLE 1.1 2.1 0.001"],
             ],
         ),
     ]
