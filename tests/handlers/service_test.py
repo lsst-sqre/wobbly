@@ -378,15 +378,14 @@ async def test_errors(client: AsyncClient) -> None:
     assert r.status_code == 422
 
 
-@pytest.mark.asyncio
-async def test_pagination(client: AsyncClient) -> None:
-    headers = {
-        "X-Auth-Request-Service": "some-service",
-        "X-Auth-Request-User": "user",
-    }
+async def create_jobs(
+    client: AsyncClient, headers: dict[str, str], count: int
+) -> list[dict[str, Any]]:
+    """Create some test jobs and return the JSON representation."""
     now = datetime.now(tz=UTC)
     destruction = now + timedelta(days=30)
-    for n in range(10):
+    jobs = []
+    for n in range(count):
         r = await client.post(
             "/wobbly/jobs",
             json={
@@ -396,17 +395,27 @@ async def test_pagination(client: AsyncClient) -> None:
             headers=headers,
         )
         assert r.status_code == 201
+        jobs.append(r.json())
+    return jobs
 
-    # Simple job list.
-    r = await client.get("/wobbly/jobs", headers=headers)
-    assert r.status_code == 200
+
+@pytest.mark.asyncio
+async def test_pagination(client: AsyncClient) -> None:
+    headers = {
+        "X-Auth-Request-Service": "some-service",
+        "X-Auth-Request-User": "user",
+    }
+    await create_jobs(client, headers, 10)
     expected = list(range(10))
     expected.reverse()
+
+    # Simple job list without pagination.
+    r = await client.get("/wobbly/jobs", headers=headers)
+    assert r.status_code == 200
     assert [j["parameters"]["id"] for j in r.json()] == expected
     assert "Link" not in r.headers
 
-    # Limit larger than the nubmer of jobs should return all jobs with no next
-    # URL.
+    # Limit larger than the nubmer of jobs should return all jobs.
     r = await client.get("/wobbly/jobs", params={"limit": 20}, headers=headers)
     assert r.status_code == 200
     assert [j["parameters"]["id"] for j in r.json()] == expected
@@ -435,13 +444,26 @@ async def test_pagination(client: AsyncClient) -> None:
     assert r.status_code == 200
     assert [j["parameters"]["id"] for j in r.json()] == [expected[4]]
 
-    # Queries by phase.
+
+@pytest.mark.asyncio
+async def test_pagination_phase(client: AsyncClient) -> None:
+    headers = {
+        "X-Auth-Request-Service": "some-service",
+        "X-Auth-Request-User": "user",
+    }
+    await create_jobs(client, headers, 10)
+    expected = list(range(10))
+    expected.reverse()
+
+    # Change the phase of one job.
     r = await client.patch(
         "/wobbly/jobs/1",
         json={"phase": "QUEUED", "message_id": "some-message-id"},
         headers=headers,
     )
     assert r.status_code == 200
+
+    # Paginated queries by phase.
     r = await client.get("/wobbly/jobs", params={"limit": 5}, headers=headers)
     assert r.status_code == 200
     assert [j["parameters"]["id"] for j in r.json()] == expected[:5]
@@ -453,13 +475,41 @@ async def test_pagination(client: AsyncClient) -> None:
     link_data = PaginationLinkData.from_header(r.headers["Link"])
     assert not link_data.next_url
     assert not link_data.prev_url
+
+    # Unpaginated query by phase.
     r = await client.get(
         "/wobbly/jobs", params={"phase": "PENDING"}, headers=headers
     )
     assert r.status_code == 200
     assert [j["parameters"]["id"] for j in r.json()] == expected[:9]
+    assert "Link" not in r.headers
 
-    # Queries with a creation time restriction.
+    # Paginated query with empty results.
+    r = await client.get(
+        "/wobbly/jobs",
+        params={"phase": "ABORTED", "limit": 10},
+        headers=headers,
+    )
+    assert r.status_code == 200
+    assert r.json() == []
+    link_data = PaginationLinkData.from_header(r.headers["Link"])
+    assert not link_data.next_url
+    assert not link_data.prev_url
+
+
+@pytest.mark.asyncio
+async def test_pagination_since(client: AsyncClient) -> None:
+    headers = {
+        "X-Auth-Request-Service": "some-service",
+        "X-Auth-Request-User": "user",
+    }
+    await create_jobs(client, headers, 10)
+    now = datetime.now(tz=UTC)
+    expected = list(range(10))
+    expected.reverse()
+
+    # Tweak the creation time of one job so that there's something
+    # interesting to query.
     stmt = select(SQLJob).where(SQLJob.id == 2)
     async for session in db_session_dependency():
         async with session.begin():
@@ -467,6 +517,8 @@ async def test_pagination(client: AsyncClient) -> None:
             job = result.scalar_one()
             new_creation = datetime.now(tz=UTC) - timedelta(minutes=5)
             job.creation_time = datetime_to_db(new_creation)
+
+    # Search by since.
     r = await client.get(
         "/wobbly/jobs",
         params={"since": (now - timedelta(seconds=1)).isoformat()},
@@ -475,6 +527,8 @@ async def test_pagination(client: AsyncClient) -> None:
     assert r.status_code == 200
     since_expected = [*expected[:8], expected[9]]
     assert [j["parameters"]["id"] for j in r.json()] == since_expected
+
+    # Search with a since parameter that cannot be satisfied.
     r = await client.get(
         "/wobbly/jobs",
         params={"since": (now + timedelta(minutes=5)).isoformat()},
