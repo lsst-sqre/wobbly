@@ -23,6 +23,7 @@ from safir.middleware.x_forwarded import XForwardedMiddleware
 from safir.slack.webhook import SlackRouteErrorHandler
 
 from .config import config
+from .dependencies.context import context_dependency
 from .handlers import admin, internal, service
 
 __all__ = ["app"]
@@ -43,10 +44,14 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         config.database_password,
         isolation_level="REPEATABLE READ",
     )
+    event_manager = config.metrics.make_manager()
+    await event_manager.initialize()
+    await context_dependency.initialize(event_manager)
 
     yield
 
     await db_session_dependency.aclose()
+    await event_manager.aclose()
 
 
 configure_logging(

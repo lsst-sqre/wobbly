@@ -8,6 +8,14 @@ from safir.database import PaginatedList
 from safir.datetime import format_datetime_for_logging
 from structlog.stdlib import BoundLogger
 
+from .events import (
+    AbortedJobEvent,
+    CompletedJobEvent,
+    CreatedJobEvent,
+    Events,
+    FailedJobEvent,
+    QueuedJobEvent,
+)
 from .exceptions import UnknownJobError
 from .models import (
     Job,
@@ -35,12 +43,17 @@ class JobService:
     ----------
     job_storage
         Underlying database storage.
+    events
+        Event publishers.
     logger
         Logger to use.
     """
 
-    def __init__(self, job_storage: JobStore, logger: BoundLogger) -> None:
+    def __init__(
+        self, job_storage: JobStore, events: Events, logger: BoundLogger
+    ) -> None:
         self._storage = job_storage
+        self._events = events
         self._logger = logger
 
     async def create(
@@ -65,6 +78,8 @@ class JobService:
             Full job record of the newly-created job.
         """
         job = await self._storage.add(service, owner, job_data)
+        event = CreatedJobEvent(service=service, owner=owner)
+        await self._events.created.publish(event)
         self._logger.info(
             "Created job", service=service, owner=owner, job=job.id
         )
@@ -191,14 +206,37 @@ class JobService:
         match update:
             case JobUpdateAborted():
                 job = await self._storage.mark_aborted(job_id)
+                aborted_event = AbortedJobEvent(
+                    service=job.service, owner=job.owner
+                )
+                await self._events.aborted.publish(aborted_event)
                 logger = logger.bind(phase=str(job.phase))
             case JobUpdateCompleted():
                 job = await self._storage.mark_completed(
                     job_id, update.results
                 )
+                if not (job.start_time and job.end_time):
+                    msg = "Completed job has no start or end time"
+                    raise RuntimeError(msg)
+                completed_event = CompletedJobEvent(
+                    service=job.service,
+                    owner=job.owner,
+                    elapsed=job.end_time - job.start_time,
+                )
+                await self._events.completed.publish(completed_event)
                 logger = logger.bind(phase=str(job.phase))
             case JobUpdateError():
                 job = await self._storage.mark_failed(job_id, update.errors)
+                if not (job.start_time and job.end_time):
+                    msg = "Failed job has no start or end time"
+                    raise RuntimeError(msg)
+                failed_event = FailedJobEvent(
+                    service=job.service,
+                    owner=job.owner,
+                    error_code=update.errors[0].code,
+                    elapsed=job.end_time - job.start_time,
+                )
+                await self._events.failed.publish(failed_event)
                 logger = logger.bind(
                     phase=str(job.phase),
                     errors=[
@@ -218,6 +256,10 @@ class JobService:
                 job = await self._storage.mark_queued(
                     job_id, update.message_id
                 )
+                queued_event = QueuedJobEvent(
+                    service=job.service, owner=job.owner
+                )
+                await self._events.queued.publish(queued_event)
                 logger = logger.bind(
                     phase=str(job.phase), message_id=update.message_id
                 )

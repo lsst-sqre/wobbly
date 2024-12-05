@@ -437,6 +437,7 @@ class JobUpdateError(BaseModel):
         Field(
             title="Failure details",
             description="Job failure error message and details",
+            min_length=1,
         ),
     ]
 

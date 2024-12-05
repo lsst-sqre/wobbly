@@ -12,9 +12,11 @@ from typing import Annotated, Any
 from fastapi import Depends, Request
 from safir.dependencies.db_session import db_session_dependency
 from safir.dependencies.logger import logger_dependency
+from safir.metrics import EventManager
 from sqlalchemy.ext.asyncio import async_scoped_session
 from structlog.stdlib import BoundLogger
 
+from ..events import Events
 from ..factory import Factory
 
 __all__ = [
@@ -43,6 +45,9 @@ class RequestContext:
     session: async_scoped_session
     """The database session."""
 
+    events: Events
+    """Events publishers."""
+
     factory: Factory
     """The component factory."""
 
@@ -61,6 +66,9 @@ class RequestContext:
 class ContextDependency:
     """Provide a per-request context as a FastAPI dependency."""
 
+    def __init__(self) -> None:
+        self._events: Events
+
     async def __call__(
         self,
         *,
@@ -75,8 +83,20 @@ class ContextDependency:
             request=request,
             logger=logger,
             session=session,
-            factory=Factory(session, logger),
+            events=self._events,
+            factory=Factory(session, self._events, logger),
         )
+
+    async def initialize(self, event_manager: EventManager) -> None:
+        """Initialize the process-wide shared context.
+
+        Parameters
+        ----------
+        event_manager
+            Global event manager.
+        """
+        self._events = Events()
+        await self._events.initialize(event_manager)
 
 
 context_dependency = ContextDependency()

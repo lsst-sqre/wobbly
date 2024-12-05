@@ -5,6 +5,7 @@ from __future__ import annotations
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from safir.logging import LogLevel, Profile
+from safir.metrics import MetricsConfiguration, metrics_configuration_factory
 from safir.pydantic import EnvAsyncPostgresDsn
 
 __all__ = ["Config", "config"]
@@ -29,6 +30,11 @@ class Config(BaseSettings):
 
     log_level: LogLevel = Field(
         LogLevel.INFO, title="Log level of the application's logger"
+    )
+
+    metrics: MetricsConfiguration = Field(
+        default_factory=metrics_configuration_factory,
+        title="Metrics configuration",
     )
 
     name: str = Field("wobbly", title="Name of application")

@@ -332,6 +332,8 @@ class JobStore:
         async with self._session.begin():
             job = await self._get_job(job_id)
             job.end_time = datetime_to_db(current_datetime())
+            if not job.start_time:
+                job.start_time = job.end_time
             if job.phase != ExecutionPhase.ABORTED:
                 job.phase = ExecutionPhase.COMPLETED
             for sequence, result in enumerate(results, start=1):
@@ -380,6 +382,8 @@ class JobStore:
         async with self._session.begin():
             job = await self._get_job(job_id)
             job.end_time = datetime_to_db(current_datetime())
+            if not job.start_time:
+                job.start_time = job.end_time
             if job.phase != ExecutionPhase.ABORTED:
                 job.phase = ExecutionPhase.ERROR
             for error in errors:
