@@ -11,6 +11,13 @@ from safir.database import (
     retry_async_transaction,
 )
 from safir.datetime import current_datetime
+from safir.uws import (
+    JobCreate,
+    JobError,
+    JobResult,
+    JobUpdateMetadata,
+    SerializedJob,
+)
 from sqlalchemy import delete, select
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import async_scoped_session
@@ -18,16 +25,7 @@ from vo_models.uws.types import ExecutionPhase
 from vo_models.vosi.availability import Availability
 
 from .exceptions import UnknownJobError
-from .models import (
-    Job,
-    JobCreate,
-    JobCursor,
-    JobError,
-    JobIdentifier,
-    JobResult,
-    JobSearch,
-    JobUpdateMetadata,
-)
+from .models import JobCursor, JobIdentifier, JobSearch
 from .schema import Job as SQLJob
 from .schema import JobError as SQLJobError
 from .schema import JobResult as SQLJobResult
@@ -50,9 +48,11 @@ class JobStore:
 
     def __init__(self, session: async_scoped_session) -> None:
         self._session = session
-        self._paginated_runner = PaginatedQueryRunner(Job, JobCursor)
+        self._paginated_runner = PaginatedQueryRunner(SerializedJob, JobCursor)
 
-    async def add(self, service: str, owner: str, job_data: JobCreate) -> Job:
+    async def add(
+        self, service: str, owner: str, job_data: JobCreate
+    ) -> SerializedJob:
         """Create a record of a new job.
 
         The job will be created in pending status.
@@ -68,7 +68,7 @@ class JobStore:
 
         Returns
         -------
-        Job
+        SerializedJob
             Full job record of the newly-created job.
         """
         duration = None
@@ -80,7 +80,7 @@ class JobStore:
             owner=owner,
             phase=ExecutionPhase.PENDING,
             run_id=job_data.run_id,
-            parameters=job_data.parameters,
+            json_parameters=job_data.json_parameters,
             creation_time=datetime_to_db(current_datetime()),
             destruction_time=datetime_to_db(destruction_time),
             execution_duration=duration,
@@ -90,7 +90,7 @@ class JobStore:
         async with self._session.begin():
             self._session.add(job)
             await self._session.flush()
-            return Job.model_validate(job, from_attributes=True)
+            return SerializedJob.model_validate(job, from_attributes=True)
 
     async def availability(self) -> Availability:
         """Check that the database is up.
@@ -134,7 +134,7 @@ class JobStore:
             result = await self._session.execute(stmt)
             return result.rowcount >= 1
 
-    async def get(self, job_id: JobIdentifier) -> Job:
+    async def get(self, job_id: JobIdentifier) -> SerializedJob:
         """Retrieve a job by ID.
 
         Parameters
@@ -144,7 +144,7 @@ class JobStore:
 
         Returns
         -------
-        Job
+        SerializedJob
             Corresponding job.
 
         Raises
@@ -154,16 +154,16 @@ class JobStore:
         """
         async with self._session.begin():
             job = await self._get_job(job_id)
-            return Job.model_validate(job, from_attributes=True)
+            return SerializedJob.model_validate(job, from_attributes=True)
 
-    async def list_expired(self) -> list[Job]:
+    async def list_expired(self) -> list[SerializedJob]:
         """List jobs that have passed their destruction time.
 
         Excludes jobs that are already marked as archived.
 
         Returns
         -------
-        list of Job
+        list of SerializedJob
             List of expired jobs that are not currently archived.
         """
         now = datetime_to_db(datetime.now(tz=UTC))
@@ -173,14 +173,17 @@ class JobStore:
         )
         async with self._session.begin():
             jobs = await self._session.scalars(stmt)
-            return [Job.model_validate(j, from_attributes=True) for j in jobs]
+            return [
+                SerializedJob.model_validate(j, from_attributes=True)
+                for j in jobs
+            ]
 
     async def list_jobs(
         self,
         search: JobSearch,
         service: str | None = None,
         user: str | None = None,
-    ) -> PaginatedList[Job, JobCursor]:
+    ) -> PaginatedList[SerializedJob, JobCursor]:
         """List jobs.
 
         Parameters
@@ -196,7 +199,7 @@ class JobStore:
 
         Returns
         -------
-        PaginatedList of Job
+        PaginatedList of SerializedJob
             List of jobs matching the search criteria.
         """
         stmt = select(SQLJob)
@@ -247,7 +250,7 @@ class JobStore:
             return list(await self._session.scalars(stmt.distinct()))
 
     @retry_async_transaction
-    async def mark_aborted(self, job_id: JobIdentifier) -> Job:
+    async def mark_aborted(self, job_id: JobIdentifier) -> SerializedJob:
         """Mark a job as aborted.
 
         If the job has an associated start time, set or change the end time to
@@ -260,7 +263,7 @@ class JobStore:
 
         Returns
         -------
-        Job
+        SerializedJob
             Job after the transition has been applied.
 
         Raises
@@ -273,10 +276,10 @@ class JobStore:
             job.phase = ExecutionPhase.ABORTED
             if job.start_time:
                 job.end_time = datetime_to_db(current_datetime())
-            return Job.model_validate(job, from_attributes=True)
+            return SerializedJob.model_validate(job, from_attributes=True)
 
     @retry_async_transaction
-    async def mark_archived(self, job_id: JobIdentifier) -> Job:
+    async def mark_archived(self, job_id: JobIdentifier) -> SerializedJob:
         """Mark a job as archived.
 
         Parameters
@@ -286,7 +289,7 @@ class JobStore:
 
         Returns
         -------
-        Job
+        SerializedJob
             Job after the transition has been applied.
 
         Raises
@@ -297,12 +300,12 @@ class JobStore:
         async with self._session.begin():
             job = await self._get_job(job_id)
             job.phase = ExecutionPhase.ARCHIVED
-            return Job.model_validate(job, from_attributes=True)
+            return SerializedJob.model_validate(job, from_attributes=True)
 
     @retry_async_transaction
     async def mark_completed(
         self, job_id: JobIdentifier, results: list[JobResult]
-    ) -> Job:
+    ) -> SerializedJob:
         """Mark a job as completed.
 
         Set the job end time to the current time.
@@ -321,7 +324,7 @@ class JobStore:
 
         Returns
         -------
-        Job
+        SerializedJob
             Job after the transition has been applied.
 
         Raises
@@ -347,12 +350,12 @@ class JobStore:
                 )
                 self._session.add(sql_result)
             await self._session.refresh(job, ["results"])
-            return Job.model_validate(job, from_attributes=True)
+            return SerializedJob.model_validate(job, from_attributes=True)
 
     @retry_async_transaction
     async def mark_failed(
         self, job_id: JobIdentifier, errors: list[JobError]
-    ) -> Job:
+    ) -> SerializedJob:
         """Mark a job as failed with an error.
 
         Set the job end time to the current time.
@@ -371,7 +374,7 @@ class JobStore:
 
         Returns
         -------
-        Job
+        SerializedJob
             Job after the transition has been applied.
 
         Raises
@@ -396,12 +399,12 @@ class JobStore:
                 )
                 self._session.add(sql_error)
             await self._session.refresh(job, ["errors"])
-            return Job.model_validate(job, from_attributes=True)
+            return SerializedJob.model_validate(job, from_attributes=True)
 
     @retry_async_transaction
     async def mark_executing(
         self, job_id: JobIdentifier, start_time: datetime
-    ) -> Job:
+    ) -> SerializedJob:
         """Mark a job as executing.
 
         Parameters
@@ -414,7 +417,7 @@ class JobStore:
 
         Returns
         -------
-        Job
+        SerializedJob
             Job after the transition has been applied.
 
         Raises
@@ -428,12 +431,12 @@ class JobStore:
             if job.phase in (ExecutionPhase.PENDING, ExecutionPhase.QUEUED):
                 job.phase = ExecutionPhase.EXECUTING
             job.start_time = datetime_to_db(start_time)
-            return Job.model_validate(job, from_attributes=True)
+            return SerializedJob.model_validate(job, from_attributes=True)
 
     @retry_async_transaction
     async def mark_queued(
         self, job_id: JobIdentifier, message_id: str | None
-    ) -> Job:
+    ) -> SerializedJob:
         """Mark a job as queued for processing.
 
         This is called by the web frontend after queuing the work. However,
@@ -449,7 +452,7 @@ class JobStore:
 
         Returns
         -------
-        Job
+        SerializedJob
             Job after the transition has been applied.
 
         Raises
@@ -463,12 +466,12 @@ class JobStore:
                 job.message_id = message_id
             if job.phase in (ExecutionPhase.PENDING, ExecutionPhase.HELD):
                 job.phase = ExecutionPhase.QUEUED
-            return Job.model_validate(job, from_attributes=True)
+            return SerializedJob.model_validate(job, from_attributes=True)
 
     @retry_async_transaction
     async def update(
         self, job_id: JobIdentifier, job_update: JobUpdateMetadata
-    ) -> Job:
+    ) -> SerializedJob:
         """Update some portion of the job.
 
         Parameters
@@ -480,7 +483,7 @@ class JobStore:
 
         Returns
         -------
-        Job
+        SerializedJob
             The modified job record.
 
         Raises
@@ -496,7 +499,7 @@ class JobStore:
             if job_update.execution_duration:
                 duration = int(job_update.execution_duration.total_seconds())
                 job.execution_duration = duration
-            return Job.model_validate(job, from_attributes=True)
+            return SerializedJob.model_validate(job, from_attributes=True)
 
     async def _get_job(self, job_id: JobIdentifier) -> SQLJob:
         """Retrieve a job from the database by job ID."""
