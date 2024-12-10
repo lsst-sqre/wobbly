@@ -26,7 +26,7 @@ dependencies = [
     "alembic[tz]",
     "pydantic>2",
     "pydantic-settings",
-    "safir[db]>=8.0.0",
+    "safir[db,uws] @ git+https://github.com/lsst-sqre/safir@tickets/DM-47986#subdirectory=safir",
     "sqlalchemy[asyncio]>=2.0.0",
     "vo-models>=0.4.1",
 ]

@@ -13,11 +13,12 @@ from fastapi import APIRouter, Depends, Header, Path, Response
 from safir.dependencies.gafaelfawr import auth_dependency
 from safir.models import ErrorLocation
 from safir.slack.webhook import SlackRouteErrorHandler
+from safir.uws import JobCreate, SerializedJob
 
 from ..dependencies.context import RequestContext, context_dependency
 from ..dependencies.search import job_search_dependency
 from ..exceptions import UnknownJobError
-from ..models import Job, JobCreate, JobIdentifier, JobSearch, JobUpdate
+from ..models import JobIdentifier, JobSearch, JobUpdate
 
 __all__ = ["router"]
 
@@ -60,7 +61,7 @@ async def list_jobs(
     search: Annotated[JobSearch, Depends(job_search_dependency)],
     context: Annotated[RequestContext, Depends(context_dependency)],
     response: Response,
-) -> list[Job]:
+) -> list[SerializedJob]:
     job_service = context.factory.create_job_service()
     results = await job_service.list_jobs(search, service, user)
     if search.cursor or search.limit:
@@ -82,7 +83,7 @@ async def create_job(
     job_data: JobCreate,
     context: Annotated[RequestContext, Depends(context_dependency)],
     response: Response,
-) -> Job:
+) -> SerializedJob:
     job_service = context.factory.create_job_service()
     job = await job_service.create(service, user, job_data)
     url = context.request.url_for("get_job", job_id=job.id)
@@ -100,7 +101,7 @@ async def get_job(
     *,
     job_id: Annotated[JobIdentifier, Depends(job_identifier_dependency)],
     context: Annotated[RequestContext, Depends(context_dependency)],
-) -> Job:
+) -> SerializedJob:
     job_service = context.factory.create_job_service()
     try:
         return await job_service.get(job_id)
@@ -141,7 +142,7 @@ async def patch_job(
     job_id: Annotated[JobIdentifier, Depends(job_identifier_dependency)],
     update: JobUpdate,
     context: Annotated[RequestContext, Depends(context_dependency)],
-) -> Job:
+) -> SerializedJob:
     job_service = context.factory.create_job_service()
     try:
         return await job_service.update(job_id, update)

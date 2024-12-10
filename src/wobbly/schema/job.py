@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any
 
 from sqlalchemy import Index
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from vo_models.uws.types import ExecutionPhase
 
-from ..types import JobParameters
 from .base import SchemaBase
 from .error import JobError
 from .result import JobResult
@@ -32,7 +32,7 @@ class Job(SchemaBase):
     owner: Mapped[str]
     phase: Mapped[ExecutionPhase]
     run_id: Mapped[str | None]
-    parameters: Mapped[JobParameters] = mapped_column(JSONB)
+    json_parameters: Mapped[dict[str, Any]] = mapped_column(JSONB)
     message_id: Mapped[str | None]
     creation_time: Mapped[datetime]
     start_time: Mapped[datetime | None]
