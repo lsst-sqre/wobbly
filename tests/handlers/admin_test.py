@@ -14,7 +14,7 @@ async def test_admin(client: AsyncClient) -> None:
     r = await client.post(
         "/wobbly/jobs",
         json={
-            "parameters": {"foo": "bar", "baz": "other"},
+            "json_parameters": {"foo": "bar", "baz": "other"},
             "destruction_time": destruction.isoformat(),
         },
         headers={
@@ -27,7 +27,7 @@ async def test_admin(client: AsyncClient) -> None:
     r = await client.post(
         "/wobbly/jobs",
         json={
-            "parameters": {"foo": "bar", "baz": "other"},
+            "json_parameters": {"foo": "bar", "baz": "other"},
             "destruction_time": destruction.isoformat(),
         },
         headers={

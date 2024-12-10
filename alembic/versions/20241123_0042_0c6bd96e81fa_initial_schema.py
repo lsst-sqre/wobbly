@@ -46,7 +46,7 @@ def upgrade() -> None:
         ),
         sa.Column("run_id", sa.Text(), nullable=True),
         sa.Column(
-            "parameters",
+            "json_parameters",
             postgresql.JSONB(astext_type=sa.Text()),
             nullable=False,
         ),

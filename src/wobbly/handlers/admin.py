@@ -10,11 +10,12 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Response
 from safir.models import ErrorLocation
 from safir.slack.webhook import SlackRouteErrorHandler
+from safir.uws import SerializedJob
 
 from ..dependencies.context import RequestContext, context_dependency
 from ..dependencies.search import job_search_dependency
 from ..exceptions import UnknownJobError
-from ..models import Job, JobIdentifier, JobSearch
+from ..models import JobIdentifier, JobSearch
 
 __all__ = ["router"]
 
@@ -34,7 +35,7 @@ async def list_jobs(
     search: Annotated[JobSearch, Depends(job_search_dependency)],
     context: Annotated[RequestContext, Depends(context_dependency)],
     response: Response,
-) -> list[Job]:
+) -> list[SerializedJob]:
     job_service = context.factory.create_job_service()
     results = await job_service.list_jobs(search)
     if search.cursor or search.limit:
@@ -85,7 +86,7 @@ async def list_service_user_jobs(
     search: Annotated[JobSearch, Depends(job_search_dependency)],
     context: Annotated[RequestContext, Depends(context_dependency)],
     response: Response,
-) -> list[Job]:
+) -> list[SerializedJob]:
     job_service = context.factory.create_job_service()
     results = await job_service.list_jobs(search, service, user)
     if search.cursor or search.limit:
@@ -105,7 +106,7 @@ async def get_job(
     job_id: str,
     *,
     context: Annotated[RequestContext, Depends(context_dependency)],
-) -> Job:
+) -> SerializedJob:
     job_service = context.factory.create_job_service()
     identifier = JobIdentifier(service=service, owner=user, id=job_id)
     try:
@@ -142,7 +143,7 @@ async def list_user_jobs(
     search: Annotated[JobSearch, Depends(job_search_dependency)],
     context: Annotated[RequestContext, Depends(context_dependency)],
     response: Response,
-) -> list[Job]:
+) -> list[SerializedJob]:
     job_service = context.factory.create_job_service()
     results = await job_service.list_jobs(search, user=user)
     if search.cursor or search.limit:
