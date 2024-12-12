@@ -27,7 +27,14 @@ from .events import (
     QueuedJobEvent,
 )
 from .exceptions import UnknownJobError
-from .models import JobCursor, JobIdentifier, JobSearch, JobUpdate
+from .models import (
+    HealthCheck,
+    HealthStatus,
+    JobCursor,
+    JobIdentifier,
+    JobSearch,
+    JobUpdate,
+)
 from .storage import JobStore
 
 __all__ = ["JobService"]
@@ -124,6 +131,24 @@ class JobService:
             Raised if the job was not found.
         """
         return await self._storage.get(job_id)
+
+    async def health(self) -> HealthCheck:
+        """Check health of service.
+
+        Intended for use as the Kubernetes health check endpoint.
+
+        Returns
+        -------
+        HealthCheck
+            Health check results if the service seems healthy.
+
+        Raises
+        ------
+        Exception
+            Raised if there is some problem querying the database.
+        """
+        await self._storage.list_jobs(JobSearch(limit=1))
+        return HealthCheck(status=HealthStatus.HEALTHY)
 
     async def list_jobs(
         self,

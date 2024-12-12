@@ -19,10 +19,8 @@ from safir.uws import (
     SerializedJob,
 )
 from sqlalchemy import delete, select
-from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import async_scoped_session
 from vo_models.uws.types import ExecutionPhase
-from vo_models.vosi.availability import Availability
 
 from .exceptions import UnknownJobError
 from .models import JobCursor, JobIdentifier, JobSearch
@@ -91,25 +89,6 @@ class JobStore:
             self._session.add(job)
             await self._session.flush()
             return SerializedJob.model_validate(job, from_attributes=True)
-
-    async def availability(self) -> Availability:
-        """Check that the database is up.
-
-        Returns
-        -------
-        Availability
-            An IVOA availability data structure.
-        """
-        try:
-            async with self._session.begin():
-                await self._session.execute(select(SQLJob.id).limit(1))
-            return Availability(available=True)
-        except OperationalError:
-            note = "cannot query UWS job database"
-            return Availability(available=False, note=[note])
-        except Exception as e:
-            note = f"{type(e).__name__}: {e!s}"
-            return Availability(available=False, note=[note])
 
     async def delete(self, job_id: JobIdentifier) -> bool:
         """Delete a job by ID.

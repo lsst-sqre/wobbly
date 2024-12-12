@@ -6,11 +6,15 @@ internal status, or other information that should not be visible outside the
 Kubernetes cluster.
 """
 
-from fastapi import APIRouter
+from typing import Annotated
+
+from fastapi import APIRouter, Depends
 from safir.metadata import Metadata, get_metadata
 from safir.slack.webhook import SlackRouteErrorHandler
 
 from ..config import config
+from ..dependencies.context import RequestContext, context_dependency
+from ..models import HealthCheck
 
 __all__ = ["router"]
 
@@ -21,9 +25,9 @@ router = APIRouter(route_class=SlackRouteErrorHandler)
 @router.get(
     "/",
     description=(
-        "Return metadata about the running application. Can also be used as"
-        " a health check. This route is not exposed outside the cluster and"
-        " therefore cannot be used by external clients."
+        "Return metadata about the running application. This route is not"
+        " exposed outside the cluster and therefore cannot be used by"
+        " external clients."
     ),
     include_in_schema=False,
     response_model_exclude_none=True,
@@ -31,3 +35,20 @@ router = APIRouter(route_class=SlackRouteErrorHandler)
 )
 async def get_index() -> Metadata:
     return get_metadata(package_name="wobbly", application_name=config.name)
+
+
+@router.get(
+    "/health",
+    description=(
+        "Perform service health check. This route is not exposed outside the"
+        " cluster and therefore cannot be used by external clients."
+    ),
+    include_in_schema=False,
+    summary="Health check",
+)
+async def get_health(
+    *,
+    context: Annotated[RequestContext, Depends(context_dependency)],
+) -> HealthCheck:
+    job_service = context.factory.create_job_service()
+    return await job_service.health()

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
+from enum import Enum
 from typing import Annotated, Self, TypeAlias
 
 from pydantic import BaseModel, Field
@@ -24,12 +25,30 @@ from vo_models.uws.types import ExecutionPhase
 from .schema import Job as SQLJob
 
 __all__ = [
+    "HealthCheck",
+    "HealthStatus",
     "Index",
     "JobCursor",
     "JobIdentifier",
     "JobSearch",
     "JobUpdate",
 ]
+
+
+class HealthStatus(Enum):
+    """Status of health check.
+
+    Since errors are returned as HTTP 500 errors, currently the only status is
+    the healthy status.
+    """
+
+    HEALTHY = "healthy"
+
+
+class HealthCheck(BaseModel):
+    """Results of an internal health check."""
+
+    status: Annotated[HealthStatus, Field(title="Health status")]
 
 
 class Index(BaseModel):
@@ -82,16 +101,16 @@ class JobCursor(DatetimeIdCursor[SerializedJob]):
 class JobSearch:
     """Collects common search parameters for jobs."""
 
-    phases: set[ExecutionPhase] | None
+    phases: set[ExecutionPhase] | None = None
     """Include only jobs in the given phases."""
 
-    since: datetime | None
+    since: datetime | None = None
     """Include only jobs created after the given time."""
 
-    cursor: JobCursor | None
+    cursor: JobCursor | None = None
     """Cursor for retrieving paginated results."""
 
-    limit: int | None
+    limit: int | None = None
     """Limit the number of jobs returned to at most this count."""
 
 
