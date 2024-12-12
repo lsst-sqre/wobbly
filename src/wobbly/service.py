@@ -209,7 +209,7 @@ class JobService:
                     service=job.service, owner=job.owner
                 )
                 await self._events.aborted.publish(aborted_event)
-                logger = logger.bind(phase=str(job.phase))
+                logger = logger.bind(phase=job.phase.value)
             case JobUpdateCompleted():
                 job = await self._storage.mark_completed(
                     job_id, update.results
@@ -223,7 +223,7 @@ class JobService:
                     elapsed=job.end_time - job.start_time,
                 )
                 await self._events.completed.publish(completed_event)
-                logger = logger.bind(phase=str(job.phase))
+                logger = logger.bind(phase=job.phase.value)
             case JobUpdateError():
                 job = await self._storage.mark_failed(job_id, update.errors)
                 if not (job.start_time and job.end_time):
@@ -237,7 +237,7 @@ class JobService:
                 )
                 await self._events.failed.publish(failed_event)
                 logger = logger.bind(
-                    phase=str(job.phase),
+                    phase=job.phase.value,
                     errors=[
                         {"code": e.code, "message": e.message}
                         for e in update.errors
@@ -248,7 +248,7 @@ class JobService:
                     job_id, update.start_time
                 )
                 logger = logger.bind(
-                    phase=str(job.phase),
+                    phase=job.phase.value,
                     start_time=format_datetime_for_logging(update.start_time),
                 )
             case JobUpdateQueued():
@@ -260,7 +260,7 @@ class JobService:
                 )
                 await self._events.queued.publish(queued_event)
                 logger = logger.bind(
-                    phase=str(job.phase), message_id=update.message_id
+                    phase=job.phase.value, message_id=update.message_id
                 )
             case JobUpdateMetadata():
                 job = await self._storage.update(job_id, update)
