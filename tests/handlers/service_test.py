@@ -30,7 +30,7 @@ async def test_create(client: AsyncClient) -> None:
     r = await client.post(
         "/wobbly/jobs",
         json={
-            "parameters": {"foo": "bar", "baz": "other"},
+            "json_parameters": {"foo": "bar", "baz": "other"},
             "destruction_time": destruction.isoformat(),
         },
         headers=headers,
@@ -43,7 +43,7 @@ async def test_create(client: AsyncClient) -> None:
         "service": "some-service",
         "owner": "user",
         "phase": "PENDING",
-        "parameters": {"foo": "bar", "baz": "other"},
+        "json_parameters": {"foo": "bar", "baz": "other"},
         "creation_time": ANY,
         "destruction_time": destruction.strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
@@ -62,7 +62,7 @@ async def test_create(client: AsyncClient) -> None:
     r = await client.post(
         "/wobbly/jobs",
         json={
-            "parameters": ["FOO BAR", "BAZ OTHER"],
+            "json_parameters": {"foo": "bar", "baz": "other"},
             "run_id": "big-job",
             "destruction_time": destruction.isoformat(),
             "execution_duration": 600,
@@ -81,7 +81,7 @@ async def test_create(client: AsyncClient) -> None:
         "owner": "other-user",
         "phase": "PENDING",
         "run_id": "big-job",
-        "parameters": ["FOO BAR", "BAZ OTHER"],
+        "json_parameters": {"foo": "bar", "baz": "other"},
         "creation_time": ANY,
         "destruction_time": destruction.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "execution_duration": 600,
@@ -123,7 +123,7 @@ async def test_completed(client: AsyncClient) -> None:
     r = await client.post(
         "/wobbly/jobs",
         json={
-            "parameters": {"foo": "bar", "baz": "other"},
+            "json_parameters": {"foo": "bar", "baz": "other"},
             "destruction_time": destruction.isoformat(),
         },
         headers=headers,
@@ -192,7 +192,7 @@ async def test_failed(client: AsyncClient) -> None:
     r = await client.post(
         "/wobbly/jobs",
         json={
-            "parameters": {"foo": "bar", "baz": "other"},
+            "json_parameters": {"foo": "bar", "baz": "other"},
             "destruction_time": destruction.isoformat(),
         },
         headers=headers,
@@ -242,7 +242,7 @@ async def test_aborted(client: AsyncClient) -> None:
     r = await client.post(
         "/wobbly/jobs",
         json={
-            "parameters": {"foo": "bar", "baz": "other"},
+            "json_parameters": {"foo": "bar", "baz": "other"},
             "destruction_time": destruction.isoformat(),
         },
         headers=headers,
@@ -268,7 +268,7 @@ async def test_update(client: AsyncClient) -> None:
     r = await client.post(
         "/wobbly/jobs",
         json={
-            "parameters": {"foo": "bar", "baz": "other"},
+            "json_parameters": {"foo": "bar", "baz": "other"},
             "destruction_time": destruction.isoformat(),
         },
         headers=headers,
@@ -305,7 +305,7 @@ async def test_errors(client: AsyncClient) -> None:
     r = await client.post(
         "/wobbly/jobs",
         json={
-            "parameters": [],
+            "json_parameters": {},
             "destruction_time": destruction.isoformat(),
         },
         headers=headers,
@@ -322,7 +322,7 @@ async def test_errors(client: AsyncClient) -> None:
             "/wobbly/jobs",
             {
                 "json": {
-                    "parameters": [],
+                    "json_parameters": {},
                     "destruction_time": destruction.isoformat(),
                 }
             },
@@ -389,7 +389,7 @@ async def create_jobs(
         r = await client.post(
             "/wobbly/jobs",
             json={
-                "parameters": {"id": n},
+                "json_parameters": {"id": n},
                 "destruction_time": destruction.isoformat(),
             },
             headers=headers,
@@ -412,13 +412,13 @@ async def test_pagination(client: AsyncClient) -> None:
     # Simple job list without pagination.
     r = await client.get("/wobbly/jobs", headers=headers)
     assert r.status_code == 200
-    assert [j["parameters"]["id"] for j in r.json()] == expected
+    assert [j["json_parameters"]["id"] for j in r.json()] == expected
     assert "Link" not in r.headers
 
     # Limit larger than the nubmer of jobs should return all jobs.
     r = await client.get("/wobbly/jobs", params={"limit": 20}, headers=headers)
     assert r.status_code == 200
-    assert [j["parameters"]["id"] for j in r.json()] == expected
+    assert [j["json_parameters"]["id"] for j in r.json()] == expected
     link_data = PaginationLinkData.from_header(r.headers["Link"])
     assert not link_data.next_url
     assert not link_data.prev_url
@@ -426,14 +426,14 @@ async def test_pagination(client: AsyncClient) -> None:
     # Paginated queries.
     r = await client.get("/wobbly/jobs", params={"limit": 5}, headers=headers)
     assert r.status_code == 200
-    assert [j["parameters"]["id"] for j in r.json()] == expected[:5]
+    assert [j["json_parameters"]["id"] for j in r.json()] == expected[:5]
     link_data = PaginationLinkData.from_header(r.headers["Link"])
     assert not link_data.prev_url
     assert link_data.first_url == "https://example.com/wobbly/jobs?limit=5"
     assert link_data.next_url
     r = await client.get(link_data.next_url, headers=headers)
     assert r.status_code == 200
-    assert [j["parameters"]["id"] for j in r.json()] == expected[5:]
+    assert [j["json_parameters"]["id"] for j in r.json()] == expected[5:]
     link_data = PaginationLinkData.from_header(r.headers["Link"])
     assert not link_data.next_url
     assert link_data.first_url == "https://example.com/wobbly/jobs?limit=5"
@@ -442,7 +442,7 @@ async def test_pagination(client: AsyncClient) -> None:
         link_data.prev_url, params={"limit": 1}, headers=headers
     )
     assert r.status_code == 200
-    assert [j["parameters"]["id"] for j in r.json()] == [expected[4]]
+    assert [j["json_parameters"]["id"] for j in r.json()] == [expected[4]]
 
 
 @pytest.mark.asyncio
@@ -466,12 +466,12 @@ async def test_pagination_phase(client: AsyncClient) -> None:
     # Paginated queries by phase.
     r = await client.get("/wobbly/jobs", params={"limit": 5}, headers=headers)
     assert r.status_code == 200
-    assert [j["parameters"]["id"] for j in r.json()] == expected[:5]
+    assert [j["json_parameters"]["id"] for j in r.json()] == expected[:5]
     r = await client.get(
         "/wobbly/jobs", params={"limit": 5, "phase": "QUEUED"}, headers=headers
     )
     assert r.status_code == 200
-    assert [j["parameters"]["id"] for j in r.json()] == [expected[9]]
+    assert [j["json_parameters"]["id"] for j in r.json()] == [expected[9]]
     link_data = PaginationLinkData.from_header(r.headers["Link"])
     assert not link_data.next_url
     assert not link_data.prev_url
@@ -481,7 +481,7 @@ async def test_pagination_phase(client: AsyncClient) -> None:
         "/wobbly/jobs", params={"phase": "PENDING"}, headers=headers
     )
     assert r.status_code == 200
-    assert [j["parameters"]["id"] for j in r.json()] == expected[:9]
+    assert [j["json_parameters"]["id"] for j in r.json()] == expected[:9]
     assert "Link" not in r.headers
 
     # Paginated query with empty results.
@@ -526,7 +526,7 @@ async def test_pagination_since(client: AsyncClient) -> None:
     )
     assert r.status_code == 200
     since_expected = [*expected[:8], expected[9]]
-    assert [j["parameters"]["id"] for j in r.json()] == since_expected
+    assert [j["json_parameters"]["id"] for j in r.json()] == since_expected
 
     # Search with a since parameter that cannot be satisfied.
     r = await client.get(

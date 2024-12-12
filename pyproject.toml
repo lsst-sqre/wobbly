@@ -19,15 +19,13 @@ classifiers = [
 ]
 requires-python = ">=3.12"
 dependencies = [
-    # FastAPI including some optional features
-    "fastapi>=0.100",
-    "uvicorn[standard]",
-    # Other dependencies
     "alembic[tz]",
+    "fastapi>=0.100",
     "pydantic>2",
     "pydantic-settings",
-    "safir[db]>=8.0.0",
+    "safir[db,uws]>=9.0.1",
     "sqlalchemy[asyncio]>=2.0.0",
+    "uvicorn[standard]",
     "vo-models>=0.4.1",
 ]
 dynamic = ["version"]
@@ -104,11 +102,6 @@ python_files = ["tests/*.py", "tests/*/*.py"]
 # section for project-specific ignore rules.
 [tool.ruff]
 extend = "ruff-shared.toml"
-
-[tool.ruff.lint.extend-per-file-ignores]
-"tests/**" = [
-    "ASYNC221", # useful to run subprocess in async tests for Alembic
-]
 
 [tool.ruff.lint.isort]
 known-first-party = ["wobbly", "tests"]

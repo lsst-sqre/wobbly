@@ -6,6 +6,16 @@ from typing import assert_never
 
 from safir.database import PaginatedList
 from safir.datetime import format_datetime_for_logging
+from safir.uws import (
+    JobCreate,
+    JobUpdateAborted,
+    JobUpdateCompleted,
+    JobUpdateError,
+    JobUpdateExecuting,
+    JobUpdateMetadata,
+    JobUpdateQueued,
+    SerializedJob,
+)
 from structlog.stdlib import BoundLogger
 
 from .events import (
@@ -17,20 +27,7 @@ from .events import (
     QueuedJobEvent,
 )
 from .exceptions import UnknownJobError
-from .models import (
-    Job,
-    JobCreate,
-    JobCursor,
-    JobIdentifier,
-    JobSearch,
-    JobUpdate,
-    JobUpdateAborted,
-    JobUpdateCompleted,
-    JobUpdateError,
-    JobUpdateExecuting,
-    JobUpdateMetadata,
-    JobUpdateQueued,
-)
+from .models import JobCursor, JobIdentifier, JobSearch, JobUpdate
 from .storage import JobStore
 
 __all__ = ["JobService"]
@@ -58,7 +55,7 @@ class JobService:
 
     async def create(
         self, service: str, owner: str, job_data: JobCreate
-    ) -> Job:
+    ) -> SerializedJob:
         """Create a new job.
 
         The job will be created in pending status.
@@ -74,7 +71,7 @@ class JobService:
 
         Returns
         -------
-        Job
+        SerializedJob
             Full job record of the newly-created job.
         """
         job = await self._storage.add(service, owner, job_data)
@@ -108,7 +105,7 @@ class JobService:
             job=job_id.id,
         )
 
-    async def get(self, job_id: JobIdentifier) -> Job:
+    async def get(self, job_id: JobIdentifier) -> SerializedJob:
         """Retrieve a job by ID.
 
         Parameters
@@ -118,7 +115,7 @@ class JobService:
 
         Returns
         -------
-        Job
+        SerializedJob
             Corresponding job.
 
         Raises
@@ -133,7 +130,7 @@ class JobService:
         search: JobSearch,
         service: str | None = None,
         user: str | None = None,
-    ) -> PaginatedList[Job, JobCursor]:
+    ) -> PaginatedList[SerializedJob, JobCursor]:
         """List jobs.
 
         Parameters
@@ -149,7 +146,7 @@ class JobService:
 
         Returns
         -------
-        PaginatedList of Job
+        PaginatedList of SerializedJob
             List of jobs matching the search criteria.
         """
         return await self._storage.list_jobs(search, service, user)
@@ -180,7 +177,9 @@ class JobService:
         """
         return await self._storage.list_users(service)
 
-    async def update(self, job_id: JobIdentifier, update: JobUpdate) -> Job:
+    async def update(
+        self, job_id: JobIdentifier, update: JobUpdate
+    ) -> SerializedJob:
         """Update an existing job.
 
         Parameters
@@ -192,7 +191,7 @@ class JobService:
 
         Returns
         -------
-        Job
+        SerializedJob
             Job after the update has been applied.
 
         Raises
