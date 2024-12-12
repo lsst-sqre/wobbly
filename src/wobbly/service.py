@@ -75,7 +75,7 @@ class JobService:
             Full job record of the newly-created job.
         """
         job = await self._storage.add(service, owner, job_data)
-        event = CreatedJobEvent(service=service, owner=owner)
+        event = CreatedJobEvent(service=service, username=owner)
         await self._events.created.publish(event)
         self._logger.info(
             "Created job", service=service, owner=owner, job=job.id
@@ -206,7 +206,7 @@ class JobService:
             case JobUpdateAborted():
                 job = await self._storage.mark_aborted(job_id)
                 aborted_event = AbortedJobEvent(
-                    service=job.service, owner=job.owner
+                    service=job.service, username=job.owner
                 )
                 await self._events.aborted.publish(aborted_event)
                 logger = logger.bind(phase=job.phase.value)
@@ -219,7 +219,7 @@ class JobService:
                     raise RuntimeError(msg)
                 completed_event = CompletedJobEvent(
                     service=job.service,
-                    owner=job.owner,
+                    username=job.owner,
                     elapsed=job.end_time - job.start_time,
                 )
                 await self._events.completed.publish(completed_event)
@@ -231,7 +231,7 @@ class JobService:
                     raise RuntimeError(msg)
                 failed_event = FailedJobEvent(
                     service=job.service,
-                    owner=job.owner,
+                    username=job.owner,
                     error_code=update.errors[0].code,
                     elapsed=job.end_time - job.start_time,
                 )
@@ -256,7 +256,7 @@ class JobService:
                     job_id, update.message_id
                 )
                 queued_event = QueuedJobEvent(
-                    service=job.service, owner=job.owner
+                    service=job.service, username=job.owner
                 )
                 await self._events.queued.publish(queued_event)
                 logger = logger.bind(

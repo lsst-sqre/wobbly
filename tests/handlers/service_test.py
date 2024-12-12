@@ -10,9 +10,11 @@ import pytest
 from httpx import AsyncClient
 from safir.database import PaginationLinkData, datetime_to_db
 from safir.dependencies.db_session import db_session_dependency
+from safir.metrics import NOT_NONE, MockEventPublisher
 from sqlalchemy import select
 from vo_models.uws.types import ErrorType
 
+from wobbly.dependencies.context import context_dependency
 from wobbly.schema import Job as SQLJob
 
 
@@ -181,6 +183,21 @@ async def test_completed(client: AsyncClient) -> None:
     assert now - timedelta(seconds=5) <= end_time <= now
     assert job["results"] == results
 
+    # Check that the correct metrics events were published.
+    manager = context_dependency._events
+    assert isinstance(manager.created, MockEventPublisher)
+    manager.created.published.assert_published_all(
+        [{"service": "some-service", "username": "user"}]
+    )
+    assert isinstance(manager.queued, MockEventPublisher)
+    manager.queued.published.assert_published_all(
+        [{"service": "some-service", "username": "user"}]
+    )
+    assert isinstance(manager.completed, MockEventPublisher)
+    manager.completed.published.assert_published_all(
+        [{"service": "some-service", "username": "user", "elapsed": NOT_NONE}]
+    )
+
 
 @pytest.mark.asyncio
 async def test_failed(client: AsyncClient) -> None:
@@ -231,6 +248,28 @@ async def test_failed(client: AsyncClient) -> None:
     now = datetime.now(tz=UTC)
     assert now - timedelta(seconds=5) <= end_time <= now
 
+    # Check that the correct metrics events were published.
+    manager = context_dependency._events
+    assert isinstance(manager.created, MockEventPublisher)
+    manager.created.published.assert_published_all(
+        [{"service": "some-service", "username": "user"}]
+    )
+    assert isinstance(manager.queued, MockEventPublisher)
+    manager.queued.published.assert_published_all(
+        [{"service": "some-service", "username": "user"}]
+    )
+    assert isinstance(manager.failed, MockEventPublisher)
+    manager.failed.published.assert_published_all(
+        [
+            {
+                "service": "some-service",
+                "username": "user",
+                "error_code": "SomeError",
+                "elapsed": NOT_NONE,
+            }
+        ]
+    )
+
 
 @pytest.mark.asyncio
 async def test_aborted(client: AsyncClient) -> None:
@@ -256,6 +295,17 @@ async def test_aborted(client: AsyncClient) -> None:
     job = r.json()
     assert job["phase"] == "ABORTED"
     assert "end_time" not in job
+
+    # Check that the correct metrics events were published.
+    manager = context_dependency._events
+    assert isinstance(manager.created, MockEventPublisher)
+    manager.created.published.assert_published_all(
+        [{"service": "some-service", "username": "user"}]
+    )
+    assert isinstance(manager.aborted, MockEventPublisher)
+    manager.aborted.published.assert_published_all(
+        [{"service": "some-service", "username": "user"}]
+    )
 
 
 @pytest.mark.asyncio

@@ -26,7 +26,7 @@ class JobEvent(EventPayload):
         str, Field(title="Service", description="Service managing the job")
     ]
 
-    owner: Annotated[str, Field(title="Owner", description="Owner of job")]
+    username: Annotated[str, Field(title="Owner", description="Owner of job")]
 
 
 class AbortedJobEvent(JobEvent):
