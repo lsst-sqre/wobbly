@@ -16,8 +16,10 @@ from safir.database import (
     is_database_current,
     stamp_database,
 )
+from safir.logging import configure_logging
 
 from .config import config
+from .factory import Factory
 from .schema import SchemaBase
 
 __all__ = [
@@ -41,6 +43,38 @@ def main() -> None:
 def help(ctx: click.Context, topic: str | None) -> None:
     """Show help for any command."""
     display_help(main, ctx, topic)
+
+
+@main.command()
+@click.option(
+    "--alembic-config-path",
+    envvar="WOBBLY_ALEMBIC_CONFIG_PATH",
+    type=click.Path(path_type=Path),
+    default=Path("/app/alembic.ini"),
+    help="Alembic configuration file.",
+)
+@run_with_asyncio
+async def expire(*, alembic_config_path: Path) -> None:
+    """Delete expired jobs.
+
+    Delete jobs that have passed their destruction time. The job records are
+    deleted in their entirety.
+    """
+    configure_logging(
+        profile=config.profile, log_level=config.log_level, name="wobbly"
+    )
+    logger = structlog.get_logger("wobbly")
+    engine = create_database_engine(
+        config.database_url, config.database_password
+    )
+    try:
+        if not await is_database_current(engine, logger, alembic_config_path):
+            raise click.ClickException("Database schema is not current")
+        async with Factory.standalone(engine, logger) as factory:
+            job_service = factory.create_job_service()
+            await job_service.delete_expired()
+    finally:
+        await engine.dispose()
 
 
 @main.command()
@@ -105,3 +139,4 @@ async def validate_schema(*, alembic_config_path: Path) -> None:
     logger = structlog.get_logger("wobbly")
     if not await is_database_current(engine, logger, alembic_config_path):
         raise click.ClickException("Database schema is not current")
+    await engine.dispose()

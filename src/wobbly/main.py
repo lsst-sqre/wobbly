@@ -55,9 +55,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 
 configure_logging(
-    profile=config.profile,
-    log_level=config.log_level,
-    name="wobbly",
+    profile=config.profile, log_level=config.log_level, name="wobbly"
 )
 configure_uvicorn_logging(config.log_level)
 
