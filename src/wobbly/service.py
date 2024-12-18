@@ -112,6 +112,23 @@ class JobService:
             job=job_id.id,
         )
 
+    async def delete_expired(self) -> None:
+        """Delete all jobs that have passed their destruction time.
+
+        The jobs are deleted out of the database entirely, not moved to
+        ``ARCHIVED`` status.
+
+        Be aware that Wobbly has no access to the job queue and therefore
+        cannot cancel deleted jobs, so if the destruction time is very short,
+        the job may still be executing, and the attempt to update the record
+        when it completes will fail with an HTTP 404 error.
+        """
+        jobs = await self._storage.list_expired()
+        if jobs:
+            self._logger.info(f"Deleting {len(jobs)} expired jobs")
+        count = await self._storage.delete_list(j.id for j in jobs)
+        self._logger.info(f"Finished deleting {count} expired jobs")
+
     async def get(self, job_id: JobIdentifier) -> SerializedJob:
         """Retrieve a job by ID.
 

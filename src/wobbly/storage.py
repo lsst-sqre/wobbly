@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from datetime import UTC, datetime
 
 from safir.database import (
@@ -112,6 +113,26 @@ class JobStore:
         async with self._session.begin():
             result = await self._session.execute(stmt)
             return result.rowcount >= 1
+
+    async def delete_list(self, job_ids: Iterable[str]) -> int:
+        """Delete a list of jobs.
+
+        Parameters
+        ----------
+        job_ids
+            Identifiers of jobs to delete. This is only the unique key, not
+            the service and owner. The caller is responsible for any needed
+            verification of job ownership.
+
+        Returns
+        -------
+        int
+            Count of rows affected.
+        """
+        stmt = delete(SQLJob).where(SQLJob.id.in_(int(i) for i in job_ids))
+        async with self._session.begin():
+            result = await self._session.execute(stmt)
+            return result.rowcount
 
     async def get(self, job_id: JobIdentifier) -> SerializedJob:
         """Retrieve a job by ID.

@@ -18,7 +18,7 @@ from fastapi import FastAPI
 from safir.database import create_database_engine, is_database_current
 from safir.dependencies.db_session import db_session_dependency
 from safir.fastapi import ClientRequestError, client_request_error_handler
-from safir.logging import configure_logging, configure_uvicorn_logging
+from safir.logging import configure_uvicorn_logging
 from safir.middleware.x_forwarded import XForwardedMiddleware
 from safir.slack.webhook import SlackRouteErrorHandler
 
@@ -54,11 +54,6 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     await event_manager.aclose()
 
 
-configure_logging(
-    profile=config.profile,
-    log_level=config.log_level,
-    name="wobbly",
-)
 configure_uvicorn_logging(config.log_level)
 
 app = FastAPI(

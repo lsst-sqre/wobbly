@@ -2,10 +2,18 @@
 
 from __future__ import annotations
 
-from sqlalchemy.ext.asyncio import async_scoped_session
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+from typing import Self
+
+from safir.database import create_async_session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncEngine, async_scoped_session
 from structlog.stdlib import BoundLogger
 
+from .config import config
 from .events import Events
+from .schema import Job as SQLJob
 from .service import JobService
 from .storage import JobStore
 
@@ -24,6 +32,40 @@ class Factory:
     logger
         Logger to use.
     """
+
+    @classmethod
+    @asynccontextmanager
+    async def standalone(
+        cls, engine: AsyncEngine, logger: BoundLogger
+    ) -> AsyncIterator[Self]:
+        """Async context manager for Wobbly components.
+
+        Intended for background jobs.
+
+        Parameters
+        ----------
+        engine
+            Database engine.
+        logger
+            Logger to use.
+
+        Yields
+        ------
+        Factory
+            The factory. Must be used as an async context manager.
+        """
+        stmt = select(SQLJob)
+        session = await create_async_session(engine, statement=stmt)
+        event_manager = config.metrics.make_manager()
+        await event_manager.initialize()
+        events = Events()
+        await events.initialize(event_manager)
+
+        try:
+            yield cls(session, events, logger)
+        finally:
+            await session.remove()
+            await event_manager.aclose()
 
     def __init__(
         self,
