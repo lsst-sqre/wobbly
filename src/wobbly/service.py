@@ -126,19 +126,7 @@ class JobService:
         jobs = await self._storage.list_expired()
         if jobs:
             self._logger.info(f"Deleting {len(jobs)} expired jobs")
-        count = 0
-        for job in jobs:
-            job_id = JobIdentifier(
-                service=job.service, owner=job.owner, id=job.id
-            )
-            if await self._storage.delete(job_id):
-                self._logger.info(
-                    "Deleted expired job",
-                    service=job.service,
-                    owner=job.owner,
-                    job=job.id,
-                )
-                count += 1
+        count = await self._storage.delete_list(j.id for j in jobs)
         self._logger.info(f"Finished deleting {count} expired jobs")
 
     async def get(self, job_id: JobIdentifier) -> SerializedJob:
