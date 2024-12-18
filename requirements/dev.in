@@ -18,6 +18,7 @@ pydantic
 pytest
 pytest-asyncio
 pytest-cov
+pytest-sugar
 
 # Documentation
 scriv
