@@ -427,6 +427,12 @@ async def test_errors(client: AsyncClient) -> None:
     r = await client.get("/wobbly/jobs", params={"limit": -1}, headers=headers)
     assert r.status_code == 422
 
+    # Unsupported updates are rejected.
+    r = await client.patch(
+        "/wobbly/jobs/1", json={"phase": "SUSPENDED"}, headers=headers
+    )
+    assert r.status_code == 422
+
 
 async def create_jobs(
     client: AsyncClient, headers: dict[str, str], count: int

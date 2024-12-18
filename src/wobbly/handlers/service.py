@@ -9,7 +9,7 @@ service.
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Header, Path, Response
+from fastapi import APIRouter, Body, Depends, Header, Path, Response
 from safir.dependencies.gafaelfawr import auth_dependency
 from safir.models import ErrorLocation
 from safir.slack.webhook import SlackRouteErrorHandler
@@ -140,7 +140,7 @@ async def delete_job(
 async def patch_job(
     *,
     job_id: Annotated[JobIdentifier, Depends(job_identifier_dependency)],
-    update: JobUpdate,
+    update: Annotated[JobUpdate, Body()],
     context: Annotated[RequestContext, Depends(context_dependency)],
 ) -> SerializedJob:
     job_service = context.factory.create_job_service()

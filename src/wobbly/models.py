@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Annotated, Self, TypeAlias
+from typing import Annotated, Self, override
 
 from pydantic import BaseModel, Field
 from safir.database import DatetimeIdCursor
@@ -80,14 +80,17 @@ class JobIdentifier:
 class JobCursor(DatetimeIdCursor[SerializedJob]):
     """Cursor for paginated lists of jobs."""
 
+    @override
     @staticmethod
     def id_column() -> InstrumentedAttribute:
         return SQLJob.id
 
+    @override
     @staticmethod
     def time_column() -> InstrumentedAttribute:
         return SQLJob.creation_time
 
+    @override
     @classmethod
     def from_entry(
         cls, entry: SerializedJob, *, reverse: bool = False
@@ -114,7 +117,7 @@ class JobSearch:
     """Limit the number of jobs returned to at most this count."""
 
 
-JobUpdate: TypeAlias = Annotated[
+type JobUpdate = Annotated[
     JobUpdateAborted
     | JobUpdateCompleted
     | JobUpdateError

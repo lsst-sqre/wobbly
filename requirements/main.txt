@@ -115,9 +115,9 @@ asyncpg==0.30.0 \
     --hash=sha256:fb622c94db4e13137c4c7f98834185049cc50ee01d8f657ef898b6407c7b9c50 \
     --hash=sha256:fd4406d09208d5b4a14db9a9dbb311b6d7aeeab57bded7ed2f8ea41aeef39b34
     # via safir
-attrs==24.2.0 \
-    --hash=sha256:5cfb1b9148b5b086569baec03f20d7b6bf3bcacc9a42bebf87ffaaca362f6346 \
-    --hash=sha256:81921eb96de3191c8258c199618104dd27ac608d9366f5e35d011eae1867ede2
+attrs==24.3.0 \
+    --hash=sha256:8f5c07333d543103541ba7be0e2ce16eeee8130cb0b3f9238ab904ce1e85baff \
+    --hash=sha256:ac96cd038792094f438ad1f6ff80837353805ac950cd2aa0e0625ef19850c308
     # via
     #   jsonschema
     #   referencing
@@ -129,9 +129,9 @@ casefy==1.0.0 \
     --hash=sha256:bc99428475c2089c5f6a21297b4cfe4e83dff132cf3bb06655ddcb90632af1ed \
     --hash=sha256:c89f96fb0fbd13691073b7a65c1e668e81453247d647479a3db105e86d7b0df9
     # via dataclasses-avroschema
-certifi==2024.8.30 \
-    --hash=sha256:922820b53db7a7257ffbda3f597266d435245903d80737e34f8a45ff3e3230d8 \
-    --hash=sha256:bec941d2aa8195e248a60b31ff9f0558284cf01a52591ceda73ea9afffd69fd9
+certifi==2024.12.14 \
+    --hash=sha256:1275f7a45be9464efc1173084eaa30f866fe2e47d389406136d332ed4967ec56 \
+    --hash=sha256:b650d30f370c2b724812bee08008be0c4163b163ddaec3f2546c1caf65f191db
     # via
     #   httpcore
     #   httpx
@@ -964,18 +964,18 @@ proto-plus==1.25.0 \
     --hash=sha256:c91fc4a65074ade8e458e95ef8bac34d4008daa7cce4a12d6707066fca648961 \
     --hash=sha256:fbb17f57f7bd05a68b7707e745e26528b0b3c34e378db91eef93912c54982d91
     # via google-api-core
-protobuf==5.29.1 \
-    --hash=sha256:012ce28d862ff417fd629285aca5d9772807f15ceb1a0dbd15b88f58c776c98c \
-    --hash=sha256:027fbcc48cea65a6b17028510fdd054147057fa78f4772eb547b9274e5219331 \
-    --hash=sha256:1fc55267f086dd4050d18ef839d7bd69300d0d08c2a53ca7df3920cc271a3c34 \
-    --hash=sha256:22c1f539024241ee545cbcb00ee160ad1877975690b16656ff87dde107b5f110 \
-    --hash=sha256:32600ddb9c2a53dedc25b8581ea0f1fd8ea04956373c0c07577ce58d312522e0 \
-    --hash=sha256:50879eb0eb1246e3a5eabbbe566b44b10348939b7cc1b267567e8c3d07213853 \
-    --hash=sha256:5a41deccfa5e745cef5c65a560c76ec0ed8e70908a67cc8f4da5fce588b50d57 \
-    --hash=sha256:683be02ca21a6ffe80db6dd02c0b5b2892322c59ca57fd6c872d652cb80549cb \
-    --hash=sha256:8ee1461b3af56145aca2800e6a3e2f928108c749ba8feccc6f5dd0062c410c0d \
-    --hash=sha256:b5ba1d0e4c8a40ae0496d0e2ecfdbb82e1776928a205106d14ad6985a09ec155 \
-    --hash=sha256:d473655e29c0c4bbf8b69e9a8fb54645bc289dead6d753b952e7aa660254ae18
+protobuf==5.29.2 \
+    --hash=sha256:13d6d617a2a9e0e82a88113d7191a1baa1e42c2cc6f5f1398d3b054c8e7e714a \
+    --hash=sha256:2d2e674c58a06311c8e99e74be43e7f3a8d1e2b2fdf845eaa347fbd866f23355 \
+    --hash=sha256:36000f97ea1e76e8398a3f02936aac2a5d2b111aae9920ec1b769fc4a222c4d9 \
+    --hash=sha256:494229ecd8c9009dd71eda5fd57528395d1eacdf307dbece6c12ad0dd09e912e \
+    --hash=sha256:842de6d9241134a973aab719ab42b008a18a90f9f07f06ba480df268f86432f9 \
+    --hash=sha256:a0c53d78383c851bfa97eb42e3703aefdc96d2036a41482ffd55dc5f529466eb \
+    --hash=sha256:b2cc8e8bb7c9326996f0e160137b0861f1a82162502658df2951209d0cb0309e \
+    --hash=sha256:b6b0d416bbbb9d4fbf9d0561dbfc4e324fd522f61f7af0fe0f282ab67b22477e \
+    --hash=sha256:c12ba8249f5624300cf51c3d0bfe5be71a60c63e4dcf51ffe9a68771d958c851 \
+    --hash=sha256:e621a98c0201a7c8afe89d9646859859be97cb22b8bf1d8eacfd90d5bda2eb19 \
+    --hash=sha256:fde4554c0e578a5a0bcc9a276339594848d1e89f9ea47b4427c80e5d72f90181
     # via
     #   google-api-core
     #   googleapis-common-protos
@@ -1112,9 +1112,9 @@ pydantic-core==2.27.1 \
     #   pydantic-xml
     #   safir
     #   safir-arq
-pydantic-settings==2.6.1 \
-    --hash=sha256:7fb0637c786a558d3103436278a7c4f1cfd29ba8973238a50c5bb9a55387da87 \
-    --hash=sha256:e0f92546d8a9923cb8941689abf85d6601a8c19a23e97a34b2964a2e3f813ca0
+pydantic-settings==2.7.0 \
+    --hash=sha256:ac4bfd4a36831a48dbf8b2d9325425b549a0a6f18cea118436d728eb4f1c4d66 \
+    --hash=sha256:e00c05d5fa6cbbb227c84bd7487c5c1065084119b750df7c8c1a554aed236eb5
     # via
     #   wobbly (pyproject.toml)
     #   safir
@@ -1136,9 +1136,9 @@ python-dotenv==1.0.1 \
     # via
     #   pydantic-settings
     #   uvicorn
-python-multipart==0.0.19 \
-    --hash=sha256:905502ef39050557b7a6af411f454bc19526529ca46ae6831508438890ce12cc \
-    --hash=sha256:f8d5b0b9c618575bf9df01c684ded1d94a338839bdd8223838afacfb4bb2082d
+python-multipart==0.0.20 \
+    --hash=sha256:8a62d3a8335e06589fe01f2a3e178cdcc632f3fbe0d492ad9ee0ec35aab1f104 \
+    --hash=sha256:8dd0cab45b8e23064ae09147625994d090fa46f5b0d1e13af944c331a7fa9d13
     # via safir
 python-schema-registry-client==2.6.0 \
     --hash=sha256:a0688a9cd6e2a616a79fb46a6615c531cd5f9e2a5145f5c95932f792417731cb \
@@ -1326,17 +1326,17 @@ rsa==4.9 \
     --hash=sha256:90260d9058e514786967344d0ef75fa8727eed8a7d2e43ce9f4bcf1b536174f7 \
     --hash=sha256:e38464a49c6c85d7f1351b0126661487a7e0a14a50f1675ec50eb34d4f20ef21
     # via google-auth
-safir==9.0.1 \
-    --hash=sha256:8235503c7198665417e5645d87639d5c79bebfd9bf8d529154677f622915b97e \
-    --hash=sha256:e0e4fb1bb42981ddb1ad5dd8843e4aa3c73cde56500152f2cfdbeaf05bd63617
+safir==9.1.0 \
+    --hash=sha256:38718de0d2e5f9623eddc511700a15fb56fee88da7bba0e1210dc831276aa9aa \
+    --hash=sha256:630b2e59ae87edab25fb2c3d5ccd6ca156c0d525eb543624532bbf4fd3c85536
     # via wobbly (pyproject.toml)
-safir-arq==9.0.1 \
-    --hash=sha256:14fb89cd0182d64feb9fca214a76642a858aea25210b60790058f4542d0d7fd7 \
-    --hash=sha256:ddac70f37dcd78e4f816c2d4a9f8c5d21bb5d861b580bcce9a727b0517f4e9ce
+safir-arq==9.1.0 \
+    --hash=sha256:10a10ceb9ad8c22c316fe79383e8fb019cb08a08ac9e175b5980c30f083d9da5 \
+    --hash=sha256:2958806f6af356d6051a67ee4513ea525f0114f1f48636b116a2be7aab2f9f78
     # via safir
-safir-logging==9.0.1 \
-    --hash=sha256:775ab8b2c1a62fe5779f8d4504797df7affb5dbebc70fcad00307cda419d637e \
-    --hash=sha256:e5dfdfbdafb0a60dd2b8cdd63f8171cb703830cd5d433d60c27028cc9a4044f1
+safir-logging==9.1.0 \
+    --hash=sha256:614cf63ec2f54dec640df8da9ece69d8e5fb43b19f98a943430ceefac7b2f267 \
+    --hash=sha256:c486c4406ed9ffc41e3ff977ac8938cb89cd57ba7f20436a03f9b336bf0008e0
     # via safir
 six==1.17.0 \
     --hash=sha256:4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274 \
@@ -1429,7 +1429,6 @@ typing-extensions==4.12.2 \
     # via
     #   aiokafka
     #   alembic
-    #   anyio
     #   dataclasses-avroschema
     #   fastapi
     #   faststream
@@ -1444,9 +1443,9 @@ urllib3==2.2.3 \
     --hash=sha256:ca899ca043dcb1bafa3e262d73aa25c465bfb49e0bd9dd5d59f1d0acba2f8fac \
     --hash=sha256:e7d814a81dad81e6caf2ec9fdedb284ecc9c73076b62654547cc64ccdcae26e9
     # via requests
-uvicorn==0.32.1 \
-    --hash=sha256:82ad92fd58da0d12af7482ecdb5f2470a04c9c9a53ced65b9bbb4a205377602e \
-    --hash=sha256:ee9519c246a72b1c084cea8d3b44ed6026e78a4a309cbedae9c37e4cb9fbb175
+uvicorn==0.34.0 \
+    --hash=sha256:023dc038422502fa28a09c7a30bf2b6991512da7dcdb8fd35fe57cfc154126f4 \
+    --hash=sha256:404051050cd7e905de2c9a7e61790943440b3416f49cb409f965d9dcd0fa73e9
     # via wobbly (pyproject.toml)
 uvloop==0.21.0 ; platform_python_implementation != 'PyPy' and sys_platform != 'cygwin' and sys_platform != 'win32' \
     --hash=sha256:0878c2640cf341b269b7e128b1a5fed890adc4455513ca710d77d5e93aa6d6a0 \
