@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from safir.logging import LogLevel, Profile
+from safir.logging import LogLevel, Profile, configure_logging
 from safir.metrics import MetricsConfiguration, metrics_configuration_factory
 from safir.pydantic import EnvAsyncPostgresDsn
 
@@ -54,3 +54,9 @@ class Config(BaseSettings):
 
 config = Config()
 """Configuration for wobbly."""
+
+
+# Ensure this is always run so that command-line tools can rely on it as well.
+configure_logging(
+    profile=config.profile, log_level=config.log_level, name="wobbly"
+)

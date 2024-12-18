@@ -16,7 +16,6 @@ from safir.database import (
     is_database_current,
     stamp_database,
 )
-from safir.logging import configure_logging
 
 from .config import config
 from .factory import Factory
@@ -60,9 +59,6 @@ async def expire(*, alembic_config_path: Path) -> None:
     Delete jobs that have passed their destruction time. The job records are
     deleted in their entirety.
     """
-    configure_logging(
-        profile=config.profile, log_level=config.log_level, name="wobbly"
-    )
     logger = structlog.get_logger("wobbly")
     engine = create_database_engine(
         config.database_url, config.database_password
