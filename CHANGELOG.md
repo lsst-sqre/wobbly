@@ -7,6 +7,13 @@ Find changes for the upcoming release in the project's [changelog.d directory](h
 
 <!-- scriv-insert-here -->
 
+<a id='changelog-0.2.1'></a>
+## 0.2.1 (2024-12-18)
+
+### Bug fixes
+
+- Disable strict validation of X.509 certificates when reporting metrics events. The certificates created by Strimzi do not currently pass those checks.
+
 <a id='changelog-0.2.0'></a>
 ## 0.2.0 (2024-12-18)
 
