@@ -9,7 +9,7 @@ called.
 
 from __future__ import annotations
 
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from importlib.metadata import metadata, version
 
@@ -30,7 +30,7 @@ __all__ = ["app"]
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     """Set up and tear down the application."""
     logger = structlog.get_logger("wobbly")
     engine = create_database_engine(
