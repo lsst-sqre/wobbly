@@ -2,8 +2,8 @@
 
 Be careful when writing tests in this framework because the click command
 handling code spawns its own async worker pools when needed. None of these
-tests can therefore be async, and should instead run coroutines using the
-``event_loop`` fixture when needed.
+tests can therefore be async, and should instead run coroutines by creating an
+event loop when needed.
 """
 
 from __future__ import annotations
@@ -29,7 +29,8 @@ from wobbly.models import JobSearch
 from wobbly.schema import SchemaBase
 
 
-def test_expire(event_loop: asyncio.AbstractEventLoop) -> None:
+def test_expire() -> None:
+    event_loop = asyncio.new_event_loop()
     engine = create_database_engine(
         config.database_url, config.database_password
     )
