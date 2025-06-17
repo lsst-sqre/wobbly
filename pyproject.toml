@@ -20,10 +20,10 @@ classifiers = [
 ]
 requires-python = ">=3.13"
 dependencies = [
-    "alembic[tz]",
+    "alembic[tz]>=1.16",
     "fastapi>=0.100",
     "pydantic>2",
-    "pydantic-settings",
+    "pydantic-settings>=2.6",
     "safir[db,uws]>=9.1.1",
     "sqlalchemy[asyncio]>=2.0.0",
     "uvicorn[standard]",
@@ -42,7 +42,31 @@ Source = "https://github.com/lsst-sqre/wobbly"
 requires = ["setuptools>=61", "wheel", "setuptools_scm[toml]>=6.2"]
 build-backend = "setuptools.build_meta"
 
-[tool.setuptools_scm]
+[dependency-groups]
+dev = [
+    "asgi-lifespan",
+    "coverage[toml]",
+    "httpx",
+    "pytest",
+    "pytest-asyncio",
+    "pytest-cov",
+    "pytest-sugar",
+    "ruff",
+    "scriv[toml]",
+]
+lint = [
+    "pre-commit",
+    "pre-commit-uv",
+    "ruff",
+]
+tox = [
+    "tox>=4.24",
+    "tox-docker>=5",
+    "tox-uv>=1.25",
+]
+typing = [
+    "mypy>=1.15",
+]
 
 [tool.coverage.run]
 parallel = true
@@ -120,3 +144,5 @@ format = "md"
 md_header_level = "2"
 new_fragment_template = "file:changelog.d/_template.md.jinja"
 skip_fragments = "_template.md.jinja"
+
+[tool.setuptools_scm]
