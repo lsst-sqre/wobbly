@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from typing import Any, cast
 from unittest.mock import ANY
+from urllib.parse import parse_qs, urlparse
 
 import pytest
 from httpx import AsyncClient
@@ -408,7 +409,7 @@ async def test_errors(client: AsyncClient) -> None:
                 "X-Auth-Request-Service": "some-service",
                 "X-Auth-Request-User": "other-user",
             },
-            **cast(dict[str, Any], kwargs),
+            **cast("dict[str, Any]", kwargs),
         )
         assert r.status_code == 404
         r = await method(
@@ -417,7 +418,7 @@ async def test_errors(client: AsyncClient) -> None:
                 "X-Auth-Request-Service": "other-service",
                 "X-Auth-Request-User": "user",
             },
-            **cast(dict[str, Any], kwargs),
+            **cast("dict[str, Any]", kwargs),
         )
         assert r.status_code == 404
 
@@ -494,9 +495,10 @@ async def test_pagination(client: AsyncClient) -> None:
     assert not link_data.next_url
     assert link_data.first_url == "https://example.com/wobbly/jobs?limit=5"
     assert link_data.prev_url
-    r = await client.get(
-        link_data.prev_url, params={"limit": 1}, headers=headers
-    )
+    prev_url_params = parse_qs(urlparse(link_data.prev_url).query)
+    params = {k: v[0] for k, v in prev_url_params.items()}
+    params["limit"] = "1"
+    r = await client.get(link_data.prev_url, params=params, headers=headers)
     assert r.status_code == 200
     assert [j["json_parameters"]["id"] for j in r.json()] == [expected[4]]
 
