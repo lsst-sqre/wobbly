@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Self
 
@@ -37,7 +37,7 @@ class Factory:
     @asynccontextmanager
     async def standalone(
         cls, engine: AsyncEngine, logger: BoundLogger
-    ) -> AsyncIterator[Self]:
+    ) -> AsyncGenerator[Self]:
         """Async context manager for Wobbly components.
 
         Intended for background jobs.
