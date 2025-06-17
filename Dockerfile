@@ -31,22 +31,21 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     ./install-dependency-packages.sh
 
-# Create a Python virtual environment.
-ENV VIRTUAL_ENV=/opt/venv
-RUN uv venv $VIRTUAL_ENV
+# Disable hard links during uv package installation since we're using a
+# cache on a separate file system.
+ENV UV_LINK_MODE=copy
 
-# Make sure we use the virtualenv.
-ENV PATH="$VIRTUAL_ENV/bin:$PATH"
-
-# Install the app's Python runtime dependencies.
-COPY requirements/main.txt ./requirements.txt
-RUN uv pip install --compile-bytecode --verify-hashes --no-cache \
-    -r requirements.txt
+# Install the dependencies.
+WORKDIR /app
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=bind,source=uv.lock,target=uv.lock \
+    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    uv sync --frozen --no-default-groups --compile-bytecode --no-install-project
 
 # Install the application itself.
-COPY . /workdir
-WORKDIR /workdir
-RUN uv pip install --compile-bytecode --no-cache .
+ADD . /app
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv pip install --no-deps --compile-bytecode .
 
 FROM base-image AS runtime-image
 
@@ -54,23 +53,17 @@ FROM base-image AS runtime-image
 RUN useradd --create-home appuser
 
 # Copy the virtualenv.
-COPY --from=install-image /opt/venv /opt/venv
-
-# Copy the Alembic configuration and migrations, and set that path as the
-# working directory so that Alembic can be run with a simple entry command
-# and no extra configuration.
-COPY --from=install-image /workdir/alembic.ini /app/alembic.ini
-COPY --from=install-image /workdir/alembic /app/alembic
-WORKDIR /app
-
-# Make sure we use the virtualenv.
-ENV PATH="/opt/venv/bin:$PATH"
+COPY --from=install-image /app /app
 
 # Switch to the non-root user.
 USER appuser
 
 # Expose the port.
 EXPOSE 8080
+
+# Make sure we use the virtualenv
+WORKDIR /app
+ENV PATH="/app/.venv/bin:$PATH"
 
 # Run the application.
 CMD ["uvicorn", "wobbly.main:app", "--host", "0.0.0.0", "--port", "8080"]
