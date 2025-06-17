@@ -7,6 +7,15 @@ Find changes for the upcoming release in the project's [changelog.d directory](h
 
 <!-- scriv-insert-here -->
 
+<a id='changelog-1.0.0'></a>
+## 1.0.0 (2025-06-17)
+
+wobbly has been running in production for several months now, so release it as version 1.0.0. There are no user-visible changes in this release.
+
+### Other changes
+
+- Use [uv](https://github.com/astral-sh/uv) to maintain frozen dependencies and set up a development environment.
+
 <a id='changelog-0.2.1'></a>
 ## 0.2.1 (2024-12-18)
 
