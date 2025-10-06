@@ -40,7 +40,7 @@ Homepage = "https://wobbly.lsst.io"
 Source = "https://github.com/lsst-sqre/wobbly"
 
 [build-system]
-requires = ["setuptools>=61", "wheel", "setuptools_scm[toml]>=6.2"]
+requires = ["setuptools>=61", "setuptools_scm[toml]>=6.2"]
 build-backend = "setuptools.build_meta"
 
 [dependency-groups]
