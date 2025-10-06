@@ -1940,6 +1940,7 @@ dependencies = [
     { name = "pydantic-settings" },
     { name = "safir", extra = ["db", "kafka", "uws"] },
     { name = "sqlalchemy", extra = ["asyncio"] },
+    { name = "structlog" },
     { name = "uvicorn", extra = ["standard"] },
     { name = "vo-models" },
 ]
@@ -1978,6 +1979,7 @@ requires-dist = [
     { name = "pydantic-settings", specifier = ">=2.6" },
     { name = "safir", extras = ["db", "kafka", "uws"], specifier = ">=13" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.0.0" },
+    { name = "structlog" },
     { name = "uvicorn", extras = ["standard"] },
     { name = "vo-models", specifier = ">=0.4.1" },
 ]

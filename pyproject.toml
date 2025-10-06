@@ -26,6 +26,7 @@ dependencies = [
     "pydantic-settings>=2.6",
     "safir[db,kafka,uws]>=13",
     "sqlalchemy[asyncio]>=2.0.0",
+    "structlog",
     "uvicorn[standard]",
     "vo-models>=0.4.1",
 ]
