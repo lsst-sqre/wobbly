@@ -7,6 +7,18 @@ Find changes for the upcoming release in the project's [changelog.d directory](h
 
 <!-- scriv-insert-here -->
 
+<a id='changelog-1.1.0'></a>
+## 1.1.0 (2025-10-06)
+
+### New features
+
+- Add optional support for reporting exceptions to Sentry.
+
+### Other changes
+
+- Include the UWS job ID in metrics events so that timings can be traced back to the original request.
+- Log usernames as `user` rather than `owner` in structured logging to match other services and make cross-matching easier.
+
 <a id='changelog-1.0.0'></a>
 ## 1.0.0 (2025-06-17)
 
