@@ -28,6 +28,8 @@ class JobEvent(EventPayload):
 
     username: Annotated[str, Field(title="Owner", description="Owner of job")]
 
+    job_id: Annotated[str, Field(title="Job ID", description="UWS job ID")]
+
 
 class AbortedJobEvent(JobEvent):
     """A job was aborted."""

@@ -188,15 +188,22 @@ async def test_completed(client: AsyncClient) -> None:
     manager = context_dependency._events
     assert isinstance(manager.created, MockEventPublisher)
     manager.created.published.assert_published_all(
-        [{"service": "some-service", "username": "user"}]
+        [{"service": "some-service", "username": "user", "job_id": "1"}]
     )
     assert isinstance(manager.queued, MockEventPublisher)
     manager.queued.published.assert_published_all(
-        [{"service": "some-service", "username": "user"}]
+        [{"service": "some-service", "username": "user", "job_id": "1"}]
     )
     assert isinstance(manager.completed, MockEventPublisher)
     manager.completed.published.assert_published_all(
-        [{"service": "some-service", "username": "user", "elapsed": NOT_NONE}]
+        [
+            {
+                "service": "some-service",
+                "username": "user",
+                "job_id": "1",
+                "elapsed": NOT_NONE,
+            }
+        ]
     )
 
 
@@ -253,11 +260,11 @@ async def test_failed(client: AsyncClient) -> None:
     manager = context_dependency._events
     assert isinstance(manager.created, MockEventPublisher)
     manager.created.published.assert_published_all(
-        [{"service": "some-service", "username": "user"}]
+        [{"service": "some-service", "username": "user", "job_id": "1"}]
     )
     assert isinstance(manager.queued, MockEventPublisher)
     manager.queued.published.assert_published_all(
-        [{"service": "some-service", "username": "user"}]
+        [{"service": "some-service", "username": "user", "job_id": "1"}]
     )
     assert isinstance(manager.failed, MockEventPublisher)
     manager.failed.published.assert_published_all(
@@ -265,6 +272,7 @@ async def test_failed(client: AsyncClient) -> None:
             {
                 "service": "some-service",
                 "username": "user",
+                "job_id": "1",
                 "error_code": "SomeError",
                 "elapsed": NOT_NONE,
             }
@@ -301,11 +309,11 @@ async def test_aborted(client: AsyncClient) -> None:
     manager = context_dependency._events
     assert isinstance(manager.created, MockEventPublisher)
     manager.created.published.assert_published_all(
-        [{"service": "some-service", "username": "user"}]
+        [{"service": "some-service", "username": "user", "job_id": "1"}]
     )
     assert isinstance(manager.aborted, MockEventPublisher)
     manager.aborted.published.assert_published_all(
-        [{"service": "some-service", "username": "user"}]
+        [{"service": "some-service", "username": "user", "job_id": "1"}]
     )
 
 
