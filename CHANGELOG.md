@@ -7,6 +7,13 @@ Find changes for the upcoming release in the project's [changelog.d directory](h
 
 <!-- scriv-insert-here -->
 
+<a id='changelog-1.1.1'></a>
+## 1.1.1 (2025-10-06)
+
+### Bug fixes
+
+- Include Alembic configuration in the built image, fixing a regression introduced in 1.1.0.
+
 <a id='changelog-1.1.0'></a>
 ## 1.1.0 (2025-10-06)
 
