@@ -85,7 +85,7 @@ class JobService:
         event = CreatedJobEvent(service=service, username=owner, job_id=job.id)
         await self._events.created.publish(event)
         self._logger.info(
-            "Created job", service=service, owner=owner, job=job.id
+            "Created job", service=service, user=owner, job=job.id
         )
         return job
 
@@ -108,7 +108,7 @@ class JobService:
         self._logger.info(
             "Deleted job",
             service=job_id.service,
-            owner=job_id.owner,
+            user=job_id.owner,
             job=job_id.id,
         )
 
@@ -242,7 +242,7 @@ class JobService:
             Raised if the job was not found.
         """
         logger = self._logger.bind(
-            service=job_id.service, owner=job_id.owner, job=job_id.id
+            service=job_id.service, user=job_id.owner, job=job_id.id
         )
         match update:
             case JobUpdateAborted():
