@@ -33,7 +33,7 @@ dependencies = [
 dynamic = ["version"]
 
 [project.scripts]
-wobbly = "wobbly.cli:main"
+wobbly = "wobbly.cli:main_with_sentry"
 
 [project.urls]
 Homepage = "https://wobbly.lsst.io"

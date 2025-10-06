@@ -16,7 +16,9 @@ from safir.database import (
     is_database_current,
     stamp_database,
 )
+from safir.sentry import initialize_sentry
 
+from . import __version__
 from .config import config
 from .factory import Factory
 from .schema import SchemaBase
@@ -136,3 +138,9 @@ async def validate_schema(*, alembic_config_path: Path) -> None:
     if not await is_database_current(engine, logger, alembic_config_path):
         raise click.ClickException("Database schema is not current")
     await engine.dispose()
+
+
+def main_with_sentry() -> None:
+    """Call the main command group after initializing Sentry."""
+    initialize_sentry(release=__version__)
+    main()
