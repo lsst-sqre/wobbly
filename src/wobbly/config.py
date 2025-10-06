@@ -32,6 +32,10 @@ class Config(BaseSettings):
         LogLevel.INFO, title="Log level of the application's logger"
     )
 
+    log_profile: Profile = Field(
+        Profile.development, title="Application logging profile"
+    )
+
     metrics: MetricsConfiguration = Field(
         default_factory=metrics_configuration_factory,
         title="Metrics configuration",
@@ -40,10 +44,6 @@ class Config(BaseSettings):
     name: str = Field("wobbly", title="Name of application")
 
     path_prefix: str = Field("/wobbly", title="URL prefix for application")
-
-    profile: Profile = Field(
-        Profile.development, title="Application logging profile"
-    )
 
     slack_webhook: SecretStr | None = Field(
         None,
@@ -58,5 +58,5 @@ config = Config()
 
 # Ensure this is always run so that command-line tools can rely on it as well.
 configure_logging(
-    profile=config.profile, log_level=config.log_level, name="wobbly"
+    profile=config.log_profile, log_level=config.log_level, name="wobbly"
 )
