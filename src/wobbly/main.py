@@ -20,13 +20,19 @@ from safir.dependencies.db_session import db_session_dependency
 from safir.fastapi import ClientRequestError, client_request_error_handler
 from safir.logging import configure_uvicorn_logging
 from safir.middleware.x_forwarded import XForwardedMiddleware
+from safir.sentry import initialize_sentry
 from safir.slack.webhook import SlackRouteErrorHandler
 
+from . import __version__
 from .config import config
 from .dependencies.context import context_dependency
 from .handlers import admin, internal, service
 
 __all__ = ["app"]
+
+
+# Initialize Sentry if it's configured.
+initialize_sentry(release=__version__)
 
 
 @asynccontextmanager
