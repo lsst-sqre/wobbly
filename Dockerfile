@@ -52,7 +52,9 @@ FROM base-image AS runtime-image
 # Create a non-root user.
 RUN useradd --create-home appuser
 
-# Copy the virtualenv.
+# Copy the virtualenv and the Alembic configuration.
+COPY --from=install-image /app/alembic /app/alembic
+COPY --from=install-image /app/alembic.ini /app/alembic.ini
 COPY --from=install-image /app/.venv /app/.venv
 
 # Switch to the non-root user.
