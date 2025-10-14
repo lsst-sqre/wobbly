@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from datetime import UTC, datetime
+from typing import cast
 
 from safir.database import (
     PaginatedList,
@@ -19,7 +20,7 @@ from safir.uws import (
     JobUpdateMetadata,
     SerializedJob,
 )
-from sqlalchemy import delete, select
+from sqlalchemy import CursorResult, delete, select
 from sqlalchemy.ext.asyncio import async_scoped_session
 from vo_models.uws.types import ExecutionPhase
 
@@ -111,7 +112,9 @@ class JobStore:
         if job_id.owner:
             stmt = stmt.where(SQLJob.owner == job_id.owner)
         async with self._session.begin():
-            result = await self._session.execute(stmt)
+            # See https://github.com/sqlalchemy/sqlalchemy/issues/9185
+            # and https://github.com/sqlalchemy/sqlalchemy/issues/12813
+            result = cast("CursorResult", await self._session.execute(stmt))
             return result.rowcount >= 1
 
     async def delete_list(self, job_ids: Iterable[str]) -> int:
@@ -131,7 +134,9 @@ class JobStore:
         """
         stmt = delete(SQLJob).where(SQLJob.id.in_(int(i) for i in job_ids))
         async with self._session.begin():
-            result = await self._session.execute(stmt)
+            # See https://github.com/sqlalchemy/sqlalchemy/issues/9185
+            # and https://github.com/sqlalchemy/sqlalchemy/issues/12813
+            result = cast("CursorResult", await self._session.execute(stmt))
             return result.rowcount
 
     async def get(self, job_id: JobIdentifier) -> SerializedJob:
