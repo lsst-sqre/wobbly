@@ -8,7 +8,7 @@ from typing import Self
 
 from safir.database import create_async_session
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncEngine, async_scoped_session
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from structlog.stdlib import BoundLogger
 
 from .config import config
@@ -64,14 +64,11 @@ class Factory:
         try:
             yield cls(session, events, logger)
         finally:
-            await session.remove()
+            await session.close()
             await event_manager.aclose()
 
     def __init__(
-        self,
-        session: async_scoped_session,
-        events: Events,
-        logger: BoundLogger,
+        self, session: AsyncSession, events: Events, logger: BoundLogger
     ) -> None:
         self._session = session
         self._events = events
