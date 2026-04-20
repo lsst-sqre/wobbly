@@ -9,8 +9,9 @@ from urllib.parse import parse_qs, urlparse
 
 import pytest
 from httpx import AsyncClient
-from safir.database import PaginationLinkData, datetime_to_db
+from safir.database import datetime_to_db
 from safir.dependencies.db_session import db_session_dependency
+from safir.http import PaginationLinkData
 from safir.metrics import NOT_NONE, MockEventPublisher
 from sqlalchemy import select
 from vo_models.uws.types import ErrorType

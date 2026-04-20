@@ -12,7 +12,6 @@ from safir.database import (
     datetime_to_db,
     retry_async_transaction,
 )
-from safir.datetime import current_datetime
 from safir.uws import (
     JobCreate,
     JobError,
@@ -21,7 +20,7 @@ from safir.uws import (
     SerializedJob,
 )
 from sqlalchemy import CursorResult, delete, select
-from sqlalchemy.ext.asyncio import async_scoped_session
+from sqlalchemy.ext.asyncio import AsyncSession
 from vo_models.uws.types import ExecutionPhase
 
 from .exceptions import UnknownJobError
@@ -46,7 +45,7 @@ class JobStore:
         The underlying database session.
     """
 
-    def __init__(self, session: async_scoped_session) -> None:
+    def __init__(self, session: AsyncSession) -> None:
         self._session = session
         self._paginated_runner = PaginatedQueryRunner(SerializedJob, JobCursor)
 
@@ -75,13 +74,14 @@ class JobStore:
         if job_data.execution_duration:
             duration = int(job_data.execution_duration.total_seconds())
         destruction_time = job_data.destruction_time.replace(microsecond=0)
+        now = datetime.now(tz=UTC).replace(microsecond=0)
         job = SQLJob(
             service=service,
             owner=owner,
             phase=ExecutionPhase.PENDING,
             run_id=job_data.run_id,
             json_parameters=job_data.json_parameters,
-            creation_time=datetime_to_db(current_datetime()),
+            creation_time=datetime_to_db(now),
             destruction_time=datetime_to_db(destruction_time),
             execution_duration=duration,
             errors=[],
@@ -280,7 +280,8 @@ class JobStore:
             job = await self._get_job(job_id)
             job.phase = ExecutionPhase.ABORTED
             if job.start_time:
-                job.end_time = datetime_to_db(current_datetime())
+                now = datetime.now(tz=UTC).replace(microsecond=0)
+                job.end_time = datetime_to_db(now)
             return SerializedJob.model_validate(job, from_attributes=True)
 
     @retry_async_transaction
@@ -337,9 +338,10 @@ class JobStore:
         UnknownJobError
             Raised if the job was not found.
         """
+        now = datetime.now(tz=UTC).replace(microsecond=0)
         async with self._session.begin():
             job = await self._get_job(job_id)
-            job.end_time = datetime_to_db(current_datetime())
+            job.end_time = datetime_to_db(now)
             if not job.start_time:
                 job.start_time = job.end_time
             if job.phase != ExecutionPhase.ABORTED:
@@ -387,9 +389,10 @@ class JobStore:
         UnknownJobError
             Raised if the job was not found.
         """
+        now = datetime.now(tz=UTC).replace(microsecond=0)
         async with self._session.begin():
             job = await self._get_job(job_id)
-            job.end_time = datetime_to_db(current_datetime())
+            job.end_time = datetime_to_db(now)
             if not job.start_time:
                 job.start_time = job.end_time
             if job.phase != ExecutionPhase.ABORTED:

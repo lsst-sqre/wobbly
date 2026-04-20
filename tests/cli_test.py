@@ -9,7 +9,7 @@ event loop when needed.
 from __future__ import annotations
 
 import asyncio
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import structlog
@@ -19,7 +19,6 @@ from safir.database import (
     initialize_database,
     stamp_database_async,
 )
-from safir.datetime import current_datetime
 from safir.uws import JobCreate
 
 from wobbly.cli import main
@@ -35,12 +34,10 @@ def test_expire() -> None:
         config.database_url, config.database_password
     )
     logger = structlog.get_logger(__name__)
-    job_create_one = JobCreate(
-        json_parameters={}, destruction_time=current_datetime()
-    )
+    now = datetime.now(tz=UTC).replace(microsecond=0)
+    job_create_one = JobCreate(json_parameters={}, destruction_time=now)
     job_create_two = JobCreate(
-        json_parameters={},
-        destruction_time=current_datetime() + timedelta(days=30),
+        json_parameters={}, destruction_time=now + timedelta(days=30)
     )
 
     async def setup() -> None:
