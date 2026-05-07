@@ -7,8 +7,6 @@ constructed when this module is loaded and is not deferred until a function is
 called.
 """
 
-from __future__ import annotations
-
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from importlib.metadata import metadata, version

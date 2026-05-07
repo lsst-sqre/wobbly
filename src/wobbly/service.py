@@ -1,7 +1,5 @@
 """Service layer for the UWS storage service."""
 
-from __future__ import annotations
-
 from typing import assert_never
 
 from safir.database import PaginatedList

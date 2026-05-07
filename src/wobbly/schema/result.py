@@ -1,7 +1,5 @@
 """SQLAlchemy schema for results for a UWS job."""
 
-from __future__ import annotations
-
 from sqlalchemy import ForeignKey, Index
 from sqlalchemy.orm import Mapped, mapped_column
 

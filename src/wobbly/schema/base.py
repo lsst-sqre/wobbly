@@ -1,7 +1,5 @@
 """Declarative base for the UWS database schema."""
 
-from __future__ import annotations
-
 from typing import ClassVar
 
 from sqlalchemy import Text
