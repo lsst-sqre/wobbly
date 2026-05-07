@@ -1,7 +1,5 @@
 """Exceptions for the UWS storage service."""
 
-from __future__ import annotations
-
 from fastapi import status
 from safir.fastapi import ClientRequestError
 from safir.models import ErrorLocation

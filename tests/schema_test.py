@@ -1,7 +1,5 @@
 """Tests for the Wobbly database schema."""
 
-from __future__ import annotations
-
 import subprocess
 
 import pytest
