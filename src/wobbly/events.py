@@ -1,7 +1,7 @@
 """Metrics implementation for Wobbly."""
 
 from datetime import timedelta
-from typing import Annotated
+from typing import Annotated, override
 
 from pydantic import Field
 from safir.dependencies.metrics import EventMaker
@@ -84,6 +84,7 @@ class Events(EventMaker):
         Event publisher for queued jobs.
     """
 
+    @override
     async def initialize(self, manager: EventManager) -> None:
         self.aborted = await manager.create_publisher(
             "aborted", AbortedJobEvent

@@ -7,6 +7,13 @@ Find changes for the upcoming release in the project's [changelog.d directory](h
 
 <!-- scriv-insert-here -->
 
+<a id='changelog-1.2.0'></a>
+## 1.2.0 (2026-05-07)
+
+### New features
+
+- Publish multi-platform images that support both linux/amd64 and linux/arm64.
+
 <a id='changelog-1.1.2'></a>
 ## 1.1.2 (2025-12-03)
 
