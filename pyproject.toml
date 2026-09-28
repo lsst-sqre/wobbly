@@ -107,7 +107,7 @@ enable_error_code = [
 ]
 ignore_missing_imports = true
 local_partial_types = true
-plugins = ["pydantic.mypy", "sqlalchemy.ext.mypy.plugin"]
+plugins = ["pydantic.mypy"]
 no_implicit_reexport = true
 show_error_codes = true
 strict_equality = true
@@ -157,3 +157,9 @@ new_fragment_template = "file:changelog.d/_template.md.jinja"
 skip_fragments = "_template.md.jinja"
 
 [tool.setuptools_scm]
+
+[tool.uv]
+required-environments = [
+    "sys_platform == 'manylinux' and platform_machine == 'x86_64'",
+    "sys_platform == 'manylinux' and platform_machine == 'aarch64'",
+]
