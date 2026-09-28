@@ -5,6 +5,10 @@ resolution-markers = [
     "python_full_version >= '3.15'",
     "python_full_version < '3.15'",
 ]
+required-markers = [
+    "platform_machine == 'x86_64' and sys_platform == 'manylinux'",
+    "platform_machine == 'aarch64' and sys_platform == 'manylinux'",
+]
 
 [[package]]
 name = "aiokafka"
@@ -2087,6 +2091,7 @@ wheels = [
 name = "uv"
 version = "0.12.20"
 source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/4d/03/5b354533899706d0fc9a60011392096db6cc9d50a0350de86da15f6e7f90/uv-0.12.20.tar.gz", hash = "sha256:c994417b5fb160dd2ce41676fa52abdd2024af1d2d6ec8fc0659f66f6cff6360", size = 7130030, upload-time = "2026-09-28T23:16:53.797Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/9f/27/db5729400545d87a5c0fdcd2072fa58a168c728021705c37347f3be0d241/uv-0.12.20-py3-none-linux_armv6l.whl", hash = "sha256:9e2a89f59b033ae2c8b0008402f504edb6950c2495d22dff82583a0a67f6681a", size = 22691257, upload-time = "2026-09-28T23:16:06.196Z" },
     { url = "https://files.pythonhosted.org/packages/a7/50/4e0552f3d40c05f164e1e211ed4537defd5d9f4233f08f84f973ac8390b4/uv-0.12.20-py3-none-macosx_10_12_x86_64.whl", hash = "sha256:108e4bce126b0baec03dd035b656fe4ce614d336e182eff02abec7df5212a86c", size = 20913900, upload-time = "2026-09-28T23:16:09.661Z" },
@@ -2104,6 +2109,8 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/b0/58/cebf28df262e4420d272d287921f77e2e19be9017d4fd4de7e6455766f78/uv-0.12.20-py3-none-musllinux_1_1_i686.whl", hash = "sha256:ea25adc70c0a0f2c38cba1a291a1d1bb95bfa3afc28cbb924cc84a31b2e3749c", size = 22020490, upload-time = "2026-09-28T23:16:41.188Z" },
     { url = "https://files.pythonhosted.org/packages/e7/ab/6cd71c339a6810629b2343e78b7f83f1500eeec39ba357d3ba20527802f2/uv-0.12.20-py3-none-musllinux_1_1_x86_64.whl", hash = "sha256:903262c10ea3902e4bf5fe7c1a54fe386145afd5cf4b79e35815ce4e141d94f1", size = 23405956, upload-time = "2026-09-28T23:16:43.868Z" },
     { url = "https://files.pythonhosted.org/packages/84/ef/dc118117de45108462682fb29df880a65168ab93a58e956583e5d5ff88c1/uv-0.12.20-py3-none-win32.whl", hash = "sha256:1c28c50664b6261f64c27f8eaa8d5948572b5d6ae2957f58e474b9f33aa0f52c", size = 19982740, upload-time = "2026-09-28T23:16:46.484Z" },
+    { url = "https://files.pythonhosted.org/packages/1f/72/c98ecbe0c4dbaf9118776053688a43dfca5708d86223cf3aa5d38066df21/uv-0.12.20-py3-none-win_amd64.whl", hash = "sha256:1502e03f4da3280cbb493d356d59bdd401bf23197cd71df64e1c6feac156090c", size = 18134160, upload-time = "2026-09-28T23:16:48.933Z" },
+    { url = "https://files.pythonhosted.org/packages/ba/41/457082a351f261441876747e01e7494e242248ffea6277a96f91c0b49f93/uv-0.12.20-py3-none-win_arm64.whl", hash = "sha256:7b215cc1338009cb15d4e94a9ecc85c9e33d2c503d95d8e0dd7cd0bafe326898", size = 19365907, upload-time = "2026-09-28T23:16:51.413Z" },
 ]
 
 [[package]]
