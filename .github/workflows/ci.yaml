@@ -39,6 +39,8 @@ jobs:
 
       - name: Run tox
         run: uv run --only-group=tox tox run -e lint,typing,py,coverage-report
+        env:
+          TOX_DOCKER_GATEWAY: 127.0.0.1
 
   build:
     needs: [test]
