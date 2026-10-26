@@ -25,7 +25,7 @@ dependencies = [
     "fastapi>=0.100",
     "pydantic>2",
     "pydantic-settings>=2.6",
-    "safir[db,kafka,uws]>=15",
+    "safir[db,kafka,uws]>=15.2.3",
     "sqlalchemy[asyncio]>=2",
     "structlog",
     "uvicorn[standard]",
