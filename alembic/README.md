@@ -7,8 +7,3 @@ It is also used by the Helm hook that updates the Wobbly UWS schema if `config.u
 ## Generating new migrations
 
 For detailed instructions on how to generate a new Alembic migration, see [the Safir documentation](https://safir.lsst.io/user-guide/database/schema#create-migration).
-
-One of the files in this directory is here only to support creating migrations.
-`docker-compose.yaml` is a [docker-compose](https://docs.docker.com/compose/) configuration file that starts a PostgreSQL instance suitable for generating schema migrations.
-This file is not used at runtime.
-It is used by the tox environment described in the above documentation.

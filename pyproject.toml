@@ -61,10 +61,10 @@ lint = [
     "ruff",
     "uv",
 ]
-tox = [
-    "tox>=4.24",
-    "tox-docker>=5",
-    "tox-uv-bare>=1.25",
+nox = [
+    "nox",
+    "nox-uv",
+    "testcontainers[postgres]",
 ]
 typing = [
     "mypy>=1.15",

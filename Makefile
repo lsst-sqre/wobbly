@@ -1,19 +1,14 @@
 .PHONY: help
 help:
-	@echo "Make targets for wobbly"
+	@echo "Make targets for Wobbly"
 	@echo "make init - Set up dev environment"
-	@echo "make run - Start a local development instance"
 	@echo "make update - Update pinned dependencies and run make init"
 	@echo "make update-deps - Update pinned dependencies"
 
 .PHONY: init
 init:
 	uv sync --frozen --all-groups
-	uv run prek install
-
-.PHONY: run
-run:
-	tox run -e run
+	uv run --only-group=lint prek install
 
 .PHONY: update
 update: update-deps init
@@ -22,4 +17,4 @@ update: update-deps init
 update-deps:
 	uv lock --upgrade
 	uv run --only-group=lint prek autoupdate
-	scripts/update-uv-version.sh
+	./scripts/update-uv-version.sh
